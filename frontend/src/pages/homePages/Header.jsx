@@ -10,25 +10,25 @@ const Header = ({ isAuthenticated, user, setIsAuthenticated, setUser, setIsAdmin
   };
 
   return (
-    <header className="w-full bg-white shadow-md">
+    <header className="w-full bg-slate-900 shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4 h-16"> {/* Fixed height for consistent alignment */}
-          <div className="text-2xl font-bold text-gray-800">HAB APPLIANCES</div>
+          <div className="text-2xl font-bold text-white">HAB APPLIANCES</div>
           <nav className="space-x-6">
-            <Link to="/products" className="text-gray-600 hover:text-black">Products</Link>
-            <Link to="/brand" className="text-gray-600 hover:text-black">Brand</Link>
-            <Link to="/vlogs" className="text-gray-600 hover:text-black">Vlogs</Link>
+            <Link to="/products" className="text-white hover:text-gray-300">Products</Link>
+            <Link to="/brand" className="text-white hover:text-gray-300">Brand</Link>
+            <Link to="/vlogs" className="text-white hover:text-gray-300">Vlogs</Link>
             {isAuthenticated ? (
               <>
-                <Link to="/Carts" className="text-gray-600 hover:text-black">Cart</Link>
-                <Link to="/Orders" className="text-gray-600 hover:text-black">Orders</Link>
-                <Link to="/account" className="text-gray-600 hover:text-black">Account</Link>
-                <button onClick={logout} className="text-gray-600 hover:text-black">Log Out</button>
+                <Link to="/Carts" className="text-white hover:text-gray-300">Cart</Link>
+                <Link to="/Orders" className="text-white hover:text-gray-300">Orders</Link>
+                <Link to="/account" className="text-white hover:text-gray-300">Account</Link>
+                <button onClick={logout} className="text-white hover:text-gray-300">Log Out</button>
               </>
             ) : (
               <>
-                <Link to="/login" className="text-gray-600 hover:text-black">Log In</Link>
-                <Link to="/signup" className="text-gray-600 hover:text-black">Sign Up</Link>
+                <Link to="/login" className="text-white hover:text-gray-300">Log In</Link>
+                <Link to="/signup" className="text-white hover:text-gray-300">Sign Up</Link>
               </>
             )}
           </nav>
