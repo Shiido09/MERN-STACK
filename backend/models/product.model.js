@@ -1,4 +1,3 @@
-// models/product.model.js
 import mongoose from 'mongoose';
 
 const ProductSchema = new mongoose.Schema(
@@ -32,6 +31,10 @@ const ProductSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    explanation: {
+      type: String,
+      required: true,
+    },
     reviews: [
       {
         user: {
@@ -53,9 +56,18 @@ const ProductSchema = new mongoose.Schema(
         },
       },
     ],
-    brand: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Brand', // Reference to the Brand model
+    category: {
+      type: String,
+      enum: [
+        'Smart Appliances',
+        'Outdoor Appliances',
+        'Personal Care Appliances',
+        'Small Appliances',
+        'Home Comfort Appliances',
+        'Cleaning Appliances',
+        'Laundry Appliances',
+        'Kitchen Appliances',
+      ],
       required: true,
     },
   },
@@ -63,4 +75,4 @@ const ProductSchema = new mongoose.Schema(
 );
 
 const Product = mongoose.model('Product', ProductSchema);
-export default Product; // Default export
+export default Product;
