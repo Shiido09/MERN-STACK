@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import AdminLayout from './AdminLayout'; // Import AdminLayout
 import { DataGrid } from '@mui/x-data-grid'; // Import DataGrid from MUI
 import axios from 'axios'; // Import axios for making API requests
-
+import CircularLoader from '../../components/loader/CircularLoader'; // Import CircularLoader
 const Dashboard = () => {
   const [rows, setRows] = useState([]); // State for rows
   const [loading, setLoading] = useState(true); // State for loading
@@ -44,7 +44,7 @@ const Dashboard = () => {
       <h2 className="text-2xl font-semibold">Dashboard</h2>
       <p>Welcome to the Admin Dashboard!</p>
       {loading ? ( // Show loading indicator while fetching data
-        <p>Loading...</p>
+        <CircularLoader />
       ) : (
         <div style={{ height: 400, width: '100%', marginTop: '20px' }}>
           <DataGrid 
