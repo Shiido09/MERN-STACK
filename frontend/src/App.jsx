@@ -1,6 +1,8 @@
 // src/App.jsx
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
 import Login from './pages/homePages/loginPage';
 import SignupPage from './pages/homePages/signupPage';
@@ -42,6 +44,7 @@ function App() {
   return (
     <Router>
       <div className="bg-gray-50">
+      <ToastContainer />
         <Routes>
           <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
