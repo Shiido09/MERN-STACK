@@ -1,28 +1,36 @@
-// controllers/product.controller.js
 import Product from "../models/product.model.js";
-import cloudinary from "../cloudinaryConfig.js"; // Include this for image uploads
-import upload from "../utils/multer.js"; // Import multer configuration
-import ErrorHandler from '../utils/errorHandler.js'; // Import custom error handler
+import cloudinary from "../cloudinaryConfig.js";
+import ErrorHandler from '../utils/errorHandler.js';
+
+// Helper function to upload a buffer to Cloudinary
+const uploadToCloudinary = (buffer) => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream((error, result) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(result);
+      }
+    });
+    stream.end(buffer);
+  });
+};
 
 // CREATE a new product
 export const createProduct = async (req, res, next) => {
   try {
-    const { product_name, price, stocks, brand } = req.body; // Extract product details from request body
-    const images = req.files; // Access uploaded files from req.files
+    const { product_name, price, stocks, category, explanation } = req.body;
+    const images = req.files;
 
-    // Validate required fields
-    if (!product_name || !price || !stocks || !brand) {
+    if (!product_name || !price || !stocks || !category || !explanation) {
       return next(new ErrorHandler("All fields are required", 400));
     }
 
     let imageLinks = [];
 
-    // Handle image uploads to Cloudinary
     if (images && images.length > 0) {
       for (let i = 0; i < images.length; i++) {
-        const result = await cloudinary.uploader.upload(images[i].path, {
-          folder: 'products' // Upload images to 'products' folder in Cloudinary
-        });
+        const result = await uploadToCloudinary(images[i].buffer);
         imageLinks.push({
           public_id: result.public_id,
           url: result.secure_url
@@ -30,13 +38,13 @@ export const createProduct = async (req, res, next) => {
       }
     }
 
-    // Create the product with details and image links
     const product = await Product.create({
       product_name,
       price,
       stocks,
-      brand,
-      product_images: imageLinks // Save the image links
+      category,
+      explanation,
+      product_images: imageLinks
     });
 
     res.status(201).json({
@@ -44,68 +52,34 @@ export const createProduct = async (req, res, next) => {
       product,
     });
   } catch (error) {
-    console.error("Error creating product:", error); // Log the error for debugging
+    console.error("Error creating product:", error);
     next(new ErrorHandler("Error creating product", 500));
-  }
-};
-
-// READ all products
-export const getAllProducts = async (req, res, next) => {
-  try {
-    const products = await Product.find().populate('brand'); // Populate brand details
-    res.status(200).json({
-      success: true,
-      count: products.length,
-      products,
-    });
-  } catch (error) {
-    console.error("Error fetching products:", error); // Log the error for debugging
-    next(new ErrorHandler("Error fetching products", 500));
-  }
-};
-
-// READ a single product by ID
-export const getProductById = async (req, res, next) => {
-  console.log("Request received for product ID:", req.params.id); // Log incoming request
-  try {
-    const product = await Product.findById(req.params.id).populate('brand');
-    if (!product) {
-      return next(new ErrorHandler('Product not found', 404));
-    }
-    res.status(200).json({
-      success: true,
-      product,
-    });
-  } catch (error) {
-    console.error("Error fetching product:", error); // Log the error for debugging
-    next(new ErrorHandler("Error fetching product", 500));
   }
 };
 
 // UPDATE a product by ID
 export const updateProduct = async (req, res, next) => {
-  console.log("Request to update product ID:", req.params.id); // Log incoming request
   try {
     const product = await Product.findById(req.params.id);
     if (!product) {
       return next(new ErrorHandler('Product not found', 404));
     }
 
+    const { product_name, price, stocks, category, explanation } = req.body;
+    const images = req.files;
+
     let imageLinks = [];
 
-    // Handle image uploads
-    if (req.files && req.files.length > 0) {
-      // Optionally, delete existing images from Cloudinary if needed
+    if (images && images.length > 0) {
+      // Optionally delete existing images from Cloudinary if needed
       await Promise.all(
         product.product_images.map((image) =>
           cloudinary.uploader.destroy(image.public_id)
         )
       );
 
-      for (let i = 0; i < req.files.length; i++) {
-        const result = await cloudinary.uploader.upload(req.files[i].path, {
-          folder: 'products'
-        });
+      for (let i = 0; i < images.length; i++) {
+        const result = await uploadToCloudinary(images[i].buffer);
         imageLinks.push({
           public_id: result.public_id,
           url: result.secure_url
@@ -113,12 +87,15 @@ export const updateProduct = async (req, res, next) => {
       }
     }
 
-    // Update the product details
     const updatedProduct = await Product.findByIdAndUpdate(
       req.params.id,
       {
-        ...req.body,
-        product_images: imageLinks.length > 0 ? imageLinks : product.product_images // Retain existing images if none are uploaded
+        product_name,
+        price,
+        stocks,
+        category,
+        explanation,
+        product_images: imageLinks.length > 0 ? imageLinks : product.product_images
       },
       {
         new: true,
@@ -132,14 +109,13 @@ export const updateProduct = async (req, res, next) => {
       updatedProduct
     });
   } catch (error) {
-    console.error("Error updating product:", error); // Log the error for debugging
+    console.error("Error updating product:", error);
     next(new ErrorHandler("Error updating product", 500));
   }
 };
 
 // DELETE a product by ID
 export const deleteProduct = async (req, res, next) => {
-  console.log("Request to delete product ID:", req.params.id); // Log incoming request
   try {
     const product = await Product.findById(req.params.id);
     if (!product) {
@@ -159,7 +135,39 @@ export const deleteProduct = async (req, res, next) => {
       message: 'Product deleted successfully',
     });
   } catch (error) {
-    console.error("Error deleting product:", error); // Log the error for debugging
+    console.error("Error deleting product:", error);
     next(new ErrorHandler("Error deleting product", 500));
+  }
+};
+
+// READ all products
+export const getAllProducts = async (req, res, next) => {
+  try {
+    const products = await Product.find();
+    res.status(200).json({
+      success: true,
+      count: products.length,
+      products,
+    });
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    next(new ErrorHandler("Error fetching products", 500));
+  }
+};
+
+// READ a single product by ID
+export const getProductById = async (req, res, next) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return next(new ErrorHandler('Product not found', 404));
+    }
+    res.status(200).json({
+      success: true,
+      product,
+    });
+  } catch (error) {
+    console.error("Error fetching product:", error);
+    next(new ErrorHandler("Error fetching product", 500));
   }
 };
