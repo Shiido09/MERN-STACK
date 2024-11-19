@@ -7,6 +7,7 @@ export const handleLogout = async (setIsAuthenticated, setUser, setIsAdmin) => {
     
     localStorage.removeItem('user');
     localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('isAdmin');
     setIsAuthenticated(false);
     setUser(null);
     setIsAdmin(false);
