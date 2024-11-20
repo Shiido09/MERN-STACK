@@ -1,11 +1,20 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { handleLogout } from '../../components/authUtils'; // Adjust the import path as needed
+import { checkAuthStatus, handleLogout } from '../../components/authUtils'; // Adjust the import path as needed
+import { FaShoppingCart } from 'react-icons/fa'; // Cart icon from react-icons
 
-const Header = ({ isAuthenticated, user, setIsAuthenticated, setUser, setIsAdmin }) => {
+const Header = ({ setIsAuthenticated, setUser, setIsAdmin }) => {
+  const [isAuthenticated, setIsAuthenticatedState] = useState(false);
+
+  useEffect(() => {
+    const storedAuth = checkAuthStatus();
+    setIsAuthenticatedState(storedAuth);
+  }, []);
+
   const logout = async () => {
     console.log("Logout button clicked in Header");
     await handleLogout(setIsAuthenticated, setUser, setIsAdmin);
+    setIsAuthenticatedState(false);
     console.log("Logout function executed in Header");
   };
 
@@ -17,8 +26,6 @@ const Header = ({ isAuthenticated, user, setIsAuthenticated, setUser, setIsAdmin
           <nav className="space-x-6">
             <Link to="/index" className="text-white hover:text-gray-300">Home</Link>
             <Link to="/products" className="text-white hover:text-gray-300">Products</Link>
-            <Link to="/brand" className="text-white hover:text-gray-300">Brand</Link>
-            <Link to="/vlogs" className="text-white hover:text-gray-300">Blogs</Link>
             {isAuthenticated ? (
               <>
                 <Link to="/cart" className="text-white hover:text-gray-300">Cart</Link>
