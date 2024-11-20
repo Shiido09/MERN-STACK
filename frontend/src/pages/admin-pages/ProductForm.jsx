@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { TextField, Button, Select, MenuItem, InputLabel, FormControl, Box, Typography, CircularProgress, IconButton } from '@mui/material';
+import { TextField, Button, Select, MenuItem, InputLabel, FormControl, Box, Typography, IconButton } from '@mui/material';
 import { toast } from 'react-toastify';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { createProduct, updateProduct } from '../../slices/productSlice';
+import CircularLoader from '../../components/loader/CircularLoader'; // Adjust the import path as needed
 
 const ProductForm = ({ onSubmit, product }) => {
   const dispatch = useDispatch();
-  const { loading } = useSelector((state) => state.products);
+  const globalLoading = useSelector((state) => state.products.loading);
+  const [localLoading, setLocalLoading] = useState(false);
   const [productName, setProductName] = useState('');
   const [price, setPrice] = useState('');
   const [stocks, setStocks] = useState('');
@@ -51,6 +52,7 @@ const ProductForm = ({ onSubmit, product }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLocalLoading(true);
 
     const formData = new FormData();
     formData.append('product_name', productName);
@@ -64,26 +66,19 @@ const ProductForm = ({ onSubmit, product }) => {
     formData.append('imagesToRemove', JSON.stringify(imagesToRemove));
 
     try {
-      if (product) {
-        // If product exists, update it
-        dispatch(updateProduct({ id: product._id, formData }));
-      } else {
-        // Otherwise, create a new product
-        dispatch(createProduct(formData));
-      }
-      onSubmit(); // Call the onSubmit callback to close the modal and refresh the product list
+      await onSubmit(formData, !!product);
+      setLocalLoading(false);
     } catch (error) {
       console.error("Error submitting product form:", error);
       toast.error("Failed to submit the product form. Please try again later.");
+      setLocalLoading(false);
     }
   };
 
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-          <CircularProgress />
-        </Box>
+      {globalLoading ? (
+        <CircularLoader />
       ) : (
         <>
           <Typography variant="h5" component="h1" gutterBottom>
@@ -185,10 +180,10 @@ const ProductForm = ({ onSubmit, product }) => {
               type="submit"
               variant="contained"
               color="primary"
-              disabled={loading}
+              disabled={localLoading}
               fullWidth
             >
-              {loading ? <CircularProgress size={24} /> : (product ? 'Update' : 'Submit')}
+              {localLoading ? <CircularLoader /> : (product ? 'Update' : 'Submit')}
             </Button>
           </Box>
         </>
