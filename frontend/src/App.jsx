@@ -15,6 +15,7 @@ import PrivateRoute from './components/PrivateRoute';
 import ProductList from './pages/admin-pages/ProductsList';
 import IndexPage from './pages/homePages/index';
 import ProductPage from './pages/homePages/products';
+import CartPage from './pages/homePages/cart';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -56,6 +57,7 @@ function App() {
           <Route path="/admin/products" element={<ProductList />} />
           <Route path="/index" element={<IndexPage />} />
           <Route path="/products" element={<ProductPage />} />
+          <Route path="/cart" element={<CartPage />} />
           {/* Admin Routes using PrivateRoute
           <Route path="/admin/dashboard" element={
             <PrivateRoute 
