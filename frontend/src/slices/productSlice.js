@@ -10,19 +10,16 @@ export const fetchProducts = createAsyncThunk('products/fetchProducts', async ()
 export const createProduct = createAsyncThunk('products/createProduct', async (formData, { dispatch }) => {
   await axios.post('http://localhost:5000/api/products', formData, { withCredentials: true });
   dispatch(fetchProducts());
-  toast.success('Product created successfully!');
 });
 
 export const updateProduct = createAsyncThunk('products/updateProduct', async ({ id, formData }, { dispatch }) => {
   await axios.put(`http://localhost:5000/api/products/${id}`, formData, { withCredentials: true });
   dispatch(fetchProducts());
-  toast.success('Product updated successfully!');
 });
 
 export const deleteProduct = createAsyncThunk('products/deleteProduct', async (id, { dispatch }) => {
   await axios.delete(`http://localhost:5000/api/products/${id}`, { withCredentials: true });
   dispatch(fetchProducts());
-  toast.success('Product deleted successfully!');
 });
 
 export const deleteSelectedProducts = createAsyncThunk('products/deleteSelectedProducts', async (selectedRows, { dispatch }) => {
