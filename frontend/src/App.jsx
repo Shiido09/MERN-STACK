@@ -1,9 +1,7 @@
-// src/App.jsx
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import axios from 'axios';
 import Login from './pages/homePages/loginPage';
 import SignupPage from './pages/homePages/signupPage';
 import VerifyPage from './pages/homePages/verifyPage';
@@ -15,6 +13,7 @@ import PrivateRoute from './components/PrivateRoute';
 import ProductList from './pages/admin-pages/ProductsList';
 import IndexPage from './pages/homePages/index';
 import ProductPage from './pages/homePages/products';
+import { checkAuthStatus, handleLogout } from './components/authUtils'; // Import the utility functions
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -32,7 +31,7 @@ function App() {
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
-    const storedAuth = localStorage.getItem('isAuthenticated') === 'true';
+    const storedAuth = checkAuthStatus();
     const storedAdmin = localStorage.getItem('isAdmin') === 'true';
 
     if (storedAuth && storedUser) {
@@ -45,7 +44,7 @@ function App() {
   return (
     <Router>
       <div className="bg-gray-50">
-      <ToastContainer />
+        <ToastContainer />
         <Routes>
           <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -56,18 +55,7 @@ function App() {
           <Route path="/admin/products" element={<ProductList />} />
           <Route path="/index" element={<IndexPage />} />
           <Route path="/products" element={<ProductPage />} />
-          {/* Admin Routes using PrivateRoute
-          <Route path="/admin/dashboard" element={
-            <PrivateRoute 
-              element={<Dashboard />} 
-              isAuthenticated={isAuthenticated} 
-              isAdmin={isAdmin} 
-            />
-          } /> */}
-
-          <Route path="/" element={<HomePage />} />
-          
-          {/* Add other routes with PrivateRoute if needed */}
+          <Route path="/" element={<HomePage isAuthenticated={isAuthenticated} user={user} handleLogout={() => handleLogout(setIsAuthenticated, setUser, setIsAdmin)} />} />
         </Routes>
       </div>
     </Router>
