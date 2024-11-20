@@ -15,9 +15,10 @@ const Header = ({ isAuthenticated, user, setIsAuthenticated, setUser, setIsAdmin
         <div className="flex justify-between items-center py-4 h-16"> {/* Fixed height for consistent alignment */}
           <div className="text-2xl font-bold text-white">HAB APPLIANCES</div>
           <nav className="space-x-6">
+          <Link to="/index" className="text-white hover:text-gray-300">Home</Link>
             <Link to="/products" className="text-white hover:text-gray-300">Products</Link>
             <Link to="/brand" className="text-white hover:text-gray-300">Brand</Link>
-            <Link to="/vlogs" className="text-white hover:text-gray-300">Vlogs</Link>
+            <Link to="/vlogs" className="text-white hover:text-gray-300">Blogs</Link>
             {isAuthenticated ? (
               <>
                 <Link to="/Carts" className="text-white hover:text-gray-300">Cart</Link>

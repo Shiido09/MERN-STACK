@@ -13,7 +13,7 @@ import Dashboard from './pages/admin-pages/Dashboard';
 import HomePage from './pages/homePages/home';
 import PrivateRoute from './components/PrivateRoute';
 import ProductList from './pages/admin-pages/ProductsList';
-
+import IndexPage from './pages/homePages/index';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -53,6 +53,7 @@ function App() {
           <Route path="/verify" element={<VerifyPage />} />
           <Route path="/admin/dashboard" element={<Dashboard />} />
           <Route path="/admin/products" element={<ProductList />} />
+          <Route path="/index" element={<IndexPage />} />
           {/* Admin Routes using PrivateRoute
           <Route path="/admin/dashboard" element={
             <PrivateRoute 
