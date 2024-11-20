@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { checkAuthStatus, handleLogout } from '../../components/authUtils'; // Adjust the import path as needed
 import { FaShoppingCart } from 'react-icons/fa'; // Cart icon from react-icons
+import { toast } from 'react-toastify'; // Import toast from react-toastify
 
 const Header = ({ setIsAuthenticated, setUser, setIsAdmin }) => {
   const [isAuthenticated, setIsAuthenticatedState] = useState(false);
+  const navigate = useNavigate(); // Use the useNavigate hook
 
   useEffect(() => {
     const storedAuth = checkAuthStatus();
@@ -15,6 +17,8 @@ const Header = ({ setIsAuthenticated, setUser, setIsAdmin }) => {
     console.log("Logout button clicked in Header");
     await handleLogout(setIsAuthenticated, setUser, setIsAdmin);
     setIsAuthenticatedState(false);
+    navigate('/login'); // Redirect to login page
+    toast.success('Logged out successfully');
     console.log("Logout function executed in Header");
   };
 
