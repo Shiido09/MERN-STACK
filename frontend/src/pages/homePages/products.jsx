@@ -205,10 +205,10 @@ const ProductPage = () => {
                   <p className="text-sm text-gray-600">{product.category}</p>
                   <p className="text-sm text-gray-600">{product.brand}</p>
                   <div className="mb-2">{renderStarRating(product.reviews)}</div>
-                  <p className="text-xl font-bold text-indigo-500">${product.price.toFixed(2)}</p>
+                  <p className="text-xl font-bold text-slate-800">${product.price.toFixed(2)}</p>
                   <button
                     onClick={() => handleViewDetails(product)}
-                    className="inline-block mt-4 px-6 py-2 text-white bg-indigo-500 rounded-lg hover:bg-indigo-600"
+                    className="inline-block mt-4 px-6 py-2 text-white bg-slate-600 rounded-lg hover:bg-slate-700"
                   >
                     View Details
                   </button>
@@ -223,23 +223,38 @@ const ProductPage = () => {
 
       {/* Modal for Product Details */}
       {showModal && selectedProduct && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-lg w-full">
-            <h3 className="text-2xl font-bold mb-4">{selectedProduct.name}</h3>
-            <img src={selectedProduct.imageUrl} alt={selectedProduct.name} className="w-full h-64 object-cover rounded-lg mb-4" />
-            <p className="text-lg mb-2"><strong>Description:</strong> {selectedProduct.description}</p>
-            <p className="text-lg mb-2"><strong>Brand:</strong> {selectedProduct.brand}</p>
-            <p className="text-lg mb-2"><strong>Reviews:</strong> {selectedProduct.reviews} stars</p>
-            <p className="text-lg mb-2"><strong>Other Info:</strong> {selectedProduct.otherInfo}</p>
-            <button
-              onClick={handleCloseModal}
-              className="mt-4 px-6 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600"
-            >
-              Close
-            </button>
-          </div>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 transition-opacity duration-300 ease-in-out opacity-100">
+            <div className="bg-white p-8 rounded-lg max-w-lg w-full shadow-lg transform transition-all duration-500 scale-95 hover:scale-100">
+            <h3 className="text-3xl font-bold text-slate-600 mb-4">{selectedProduct.name}</h3>
+            <img 
+                src={selectedProduct.imageUrl} 
+                alt={selectedProduct.name} 
+                className="w-full h-64 object-cover rounded-lg mb-4" 
+            />
+            <p className="text-lg mb-2">
+                <strong className="font-semibold">Description:</strong> {selectedProduct.description}
+            </p>
+            <p className="text-lg mb-2">
+                <strong className="font-semibold">Brand:</strong> {selectedProduct.brand}
+            </p>
+            <p className="text-lg mb-2">
+                <strong className="font-semibold">Reviews:</strong> {selectedProduct.reviews} stars
+            </p>
+            <p className="text-lg mb-4">
+                <strong className="font-semibold">Other Info:</strong> {selectedProduct.otherInfo}
+            </p>
+            <div className="flex justify-end">
+                <button
+                onClick={handleCloseModal}
+                className="px-6 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300"
+                >
+                Close
+                </button>
+            </div>
+            </div>
         </div>
-      )}
+        )}
+
     </div>
   );
 };
