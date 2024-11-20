@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
 
+
 const LoginPage = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,6 +32,7 @@ const LoginPage = ({ onLogin }) => {
           toast.success('Login successfully!');
         } else {
           navigate('/products');
+          toast.success('Login successfully!');
         }
       }
     } catch (err) {
