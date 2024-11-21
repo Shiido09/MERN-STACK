@@ -15,7 +15,10 @@ import ProductList from './pages/admin-pages/ProductsList';
 import IndexPage from './pages/homePages/index';
 import ProductPage from './pages/homePages/products';
 import CartPage from './pages/homePages/cart';
-import { checkAuthStatus, handleLogout } from './components/authUtils'; // Import the utility functions
+import OrderPage from './pages/homePages/orders';
+import ProfilePage from './pages/homePages/profile';
+
+import { checkAuthStatus, handleLogout } from './components/authUtils';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -59,6 +62,8 @@ function App() {
           <Route path="/index" element={<IndexPage />} />
           <Route path="/products" element={<ProductPage />} />
           <Route path="/cart" element={<PrivateRoute element={<CartPage />} isAuthenticated={isAuthenticated} />} />
+          <Route path="/orders" element={<PrivateRoute element={<OrderPage />} isAuthenticated={isAuthenticated} />} />
+          <Route path="/profile" element={<PrivateRoute element={<ProfilePage />} isAuthenticated={isAuthenticated} />} />
         </Routes>
       </div>
     </Router>

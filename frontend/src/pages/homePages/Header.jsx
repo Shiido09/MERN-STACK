@@ -33,8 +33,8 @@ const Header = ({ setIsAuthenticated, setUser, setIsAdmin }) => {
             {isAuthenticated ? (
               <>
                 <Link to="/cart" className="text-white hover:text-gray-300">Cart</Link>
-                <Link to="/Orders" className="text-white hover:text-gray-300">Orders</Link>
-                <Link to="/account" className="text-white hover:text-gray-300">Account</Link>
+                <Link to="/orders" className="text-white hover:text-gray-300">Orders</Link>
+                <Link to="/profile" className="text-white hover:text-gray-300">Account</Link>
                 <button onClick={logout} className="text-white hover:text-gray-300">Log Out</button>
               </>
             ) : (
