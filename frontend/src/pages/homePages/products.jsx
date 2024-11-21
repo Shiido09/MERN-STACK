@@ -1,34 +1,31 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchProducts } from '../../slices/productSlice';
 import Header from './Header'; // Assuming you have a Header component
 
 const ProductPage = () => {
-  const categories = [
-    { id: 1, name: 'Kitchen Appliances' },
-    { id: 2, name: 'Laundry Appliances' },
-    { id: 3, name: 'Cleaning Appliances' },
-    { id: 4, name: 'Home Comfort Appliances' },
-    { id: 5, name: 'Small Appliances' },
-    { id: 6, name: 'Personal Care Appliances' },
-    { id: 7, name: 'Outdoor Appliances' },
-    { id: 8, name: 'Smart Appliances' },
-  ];
-
-  const brands = ['Brand A', 'Brand B', 'Brand C'];
-  const priceRanges = ['Under $100', '$100 - $300', 'Above $300'];
-
   const [filters, setFilters] = useState({
-    categories: [],
-    brands: [],
-    priceRanges: [],
+    selectedCategories: [],
+    selectedPriceRanges: [],
+    searchQuery: '',
   });
 
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [currentImageIndex, setCurrentImageIndex] = useState(0); // To track the current image index
+
+  const dispatch = useDispatch();
+  const { products, loading, error } = useSelector((state) => state.products);
+
+  useEffect(() => {
+    // Fetch products with filters when component mounts or filters change
+    if (filters) {
+      dispatch(fetchProducts({ filters }));
+    }
+  }, [dispatch, filters]);
 
   const handleSearchChange = (event) => {
-    setSearchQuery(event.target.value);
+    setFilters((prev) => ({ ...prev, searchQuery: event.target.value }));
   };
 
   const handleFilterChange = (type) => (event) => {
@@ -51,6 +48,7 @@ const ProductPage = () => {
   const handleViewDetails = (product) => {
     setSelectedProduct(product);
     setShowModal(true);
+    setCurrentImageIndex(0); // Reset image index when a product is selected
   };
 
   const handleCloseModal = () => {
@@ -58,35 +56,20 @@ const ProductPage = () => {
     setSelectedProduct(null);
   };
 
-  // Example products with images, descriptions, and reviews
-  const products = [
-    { id: 1, name: 'Blender', category: 'Kitchen Appliances', brand: 'Brand A', price: 99.99, imageUrl: '/images/landing1.jpg', description: 'High-performance blender for smoothies and soups.', reviews: 4, otherInfo: 'Comes with 2-year warranty.' },
-    { id: 2, name: 'Washing Machine', category: 'Laundry Appliances', brand: 'Brand B', price: 499.99, imageUrl: '/images/landing1.jpg', description: 'Energy-efficient washing machine with multiple cycles.', reviews: 4.5, otherInfo: '12-month warranty.' },
-    { id: 3, name: 'Robot Vacuum', category: 'Cleaning Appliances', brand: 'Brand A', price: 199.99, imageUrl: '/images/landing1.jpg', description: 'Smart vacuum cleaner with automatic charging.', reviews: 4.7, otherInfo: 'Includes 3 cleaning modes.' },
-    { id: 4, name: 'Air Purifier', category: 'Home Comfort Appliances', brand: 'Brand C', price: 299.99, imageUrl: '/images/landing1.jpg', description: 'HEPA filter air purifier for better air quality.', reviews: 4.8, otherInfo: 'Ideal for large rooms.' },
-    { id: 5, name: 'Iron', category: 'Laundry Appliances', brand: 'Brand C', price: 59.99, imageUrl: '/images/landing1.jpg', description: 'Steam iron with quick heat-up time and anti-drip feature.', reviews: 3, otherInfo: 'Lightweight design.' },
-  ];
+  const handleNextImage = () => {
+    if (selectedProduct && selectedProduct.product_images) {
+      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % selectedProduct.product_images.length);
+    }
+  };
 
-  const filteredProducts = products.filter((product) => {
-    const matchesCategory =
-      filters.categories.length > 0 ? filters.categories.includes(product.category) : true;
-    const matchesBrand = filters.brands.length > 0 ? filters.brands.includes(product.brand) : true;
-    const matchesPriceRange =
-      filters.priceRanges.length > 0
-        ? filters.priceRanges.some((range) => {
-            if (range === 'Under $100') return product.price < 100;
-            if (range === '$100 - $300') return product.price >= 100 && product.price <= 300;
-            if (range === 'Above $300') return product.price > 300;
-            return false;
-          })
-        : true;
-
-    const matchesSearchQuery =
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchQuery.toLowerCase());
-
-    return matchesCategory && matchesBrand && matchesPriceRange && matchesSearchQuery;
-  });
+  const handlePreviousImage = () => {
+    if (selectedProduct && selectedProduct.product_images) {
+      setCurrentImageIndex(
+        (prevIndex) =>
+          (prevIndex - 1 + selectedProduct.product_images.length) % selectedProduct.product_images.length
+      );
+    }
+  };
 
   const renderStarRating = (rating) => {
     const filledStars = Math.floor(rating);
@@ -112,7 +95,7 @@ const ProductPage = () => {
 
       <div className="min-h-screen bg-stone-300 p-6 flex">
         {/* Filters Section (Sidebar) */}
-        <div className="w-1/6 p-4 bg-stone-100 rounded-lg shadow-lg">
+        <div className="w-1/8 p-4 bg-stone-100 rounded-lg shadow-lg">
           <h2 className="text-2xl font-semibold mb-4">Filters</h2>
 
           {/* Search Bar */}
@@ -120,7 +103,7 @@ const ProductPage = () => {
             <input
               type="text"
               placeholder="Search Products..."
-              value={searchQuery}
+              value={filters.searchQuery}
               onChange={handleSearchChange}
               className="w-full p-2 border rounded-lg"
             />
@@ -129,132 +112,165 @@ const ProductPage = () => {
           {/* Categories Filter */}
           <div className="mb-4">
             <h3 className="text-lg font-semibold mb-2">Categories</h3>
-            <div className="space-y-1 text-sm">
-              {categories.map((category) => (
-                <div key={category.id} className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id={`category-${category.id}`}
-                    value={category.name}
-                    checked={filters.categories.includes(category.name)}
-                    onChange={handleFilterChange('categories')}
-                    className="mr-2"
-                  />
-                  <label htmlFor={`category-${category.id}`} className="text-sm">
-                    {category.name}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Brand Filter */}
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold mb-2">Brand</h3>
-            <div className="space-y-1 text-sm">
-              {brands.map((brand, index) => (
-                <div key={index} className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id={`brand-${brand}`}
-                    value={brand}
-                    checked={filters.brands.includes(brand)}
-                    onChange={handleFilterChange('brands')}
-                    className="mr-2"
-                  />
-                  <label htmlFor={`brand-${brand}`} className="text-sm">
-                    {brand}
-                  </label>
-                </div>
-              ))}
-            </div>
+            {[
+              'Kitchen Appliances',
+              'Laundry Appliances',
+              'Cleaning Appliances',
+              'Home Comfort Appliances',
+              'Small Appliances',
+              'Personal Care Appliances',
+              'Outdoor Appliances',
+              'Smart Appliances',
+            ].map((category) => (
+              <div key={category} className="flex items-center">
+                <input
+                  type="checkbox"
+                  value={category}
+                  checked={filters.selectedCategories.includes(category)}
+                  onChange={handleFilterChange('selectedCategories')}
+                  className="mr-2"
+                />
+                <label>{category}</label>
+              </div>
+            ))}
           </div>
 
           {/* Price Range Filter */}
           <div className="mb-4">
             <h3 className="text-lg font-semibold mb-2">Price Range</h3>
-            <div className="space-y-1 text-sm">
-              {priceRanges.map((range, index) => (
-                <div key={index} className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id={`price-${range}`}
-                    value={range}
-                    checked={filters.priceRanges.includes(range)}
-                    onChange={handleFilterChange('priceRanges')}
-                    className="mr-2"
-                  />
-                  <label htmlFor={`price-${range}`} className="text-sm">
-                    {range}
-                  </label>
-                </div>
-              ))}
-            </div>
+            {['Under $5000', '$5000 - $10000', 'Above $10000'].map((range) => (
+              <div key={range} className="flex items-center">
+                <input
+                  type="checkbox"
+                  value={range}
+                  checked={filters.selectedPriceRanges.includes(range)}
+                  onChange={handleFilterChange('selectedPriceRanges')}
+                  className="mr-2"
+                />
+                <label>{range}</label>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Products Display Area */}
         <div className="w-3/4 pl-6">
           <h2 className="text-2xl font-bold mb-6">Products</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProducts.length > 0 ? (
-              filteredProducts.map((product) => (
-                <div key={product.id} className="border rounded-lg shadow-lg p-4 bg-stone-100 transform transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-xl hover:bg-stone-200">
-                  <img src={product.imageUrl} alt={product.name} className="w-full h-48 object-cover rounded-lg mb-4" />
-                  <h3 className="text-lg font-semibold">{product.name}</h3>
-                  <p className="text-sm text-gray-600">{product.category}</p>
-                  <p className="text-sm text-gray-600">{product.brand}</p>
-                  <div className="mb-2">{renderStarRating(product.reviews)}</div>
-                  <p className="text-xl font-bold text-slate-800">${product.price.toFixed(2)}</p>
-                  <button
-                    onClick={() => handleViewDetails(product)}
-                    className="inline-block mt-4 px-6 py-2 text-white bg-slate-600 rounded-lg hover:bg-slate-700"
+          {loading ? (
+            <p>Loading...</p>
+          ) : error ? (
+            <p>Error loading products: {error}</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {products.length > 0 ? (
+                products.map((product) => (
+                  <div
+                    key={product._id}
+                    className="border rounded-lg shadow-lg p-4 bg-stone-100 transform transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-xl hover:bg-stone-200"
                   >
-                    View Details
-                  </button>
-                </div>
-              ))
-            ) : (
-              <p>No products found</p>
-            )}
-          </div>
-        </div>
-      </div>
+                    <img
+                      src={product.product_images[0]?.url}
+                      alt={product.product_name}
+                      className="w-full h-48 object-cover rounded-lg mb-4"
+                    />
+                    <h3 className="text-lg font-semibold">{product.product_name}</h3>
+                    <p className="text-sm text-gray-600">{product.category}</p>
+                    <div className="mb-2">{renderStarRating(product.numOfReviews)}</div>
+                    <p className="text-xl font-bold text-slate-800">${product.price.toFixed(2)}</p>
 
+                    {/* Stock and Quantity Selector */}
+                    <div className="mb-4">
+                      <label htmlFor={`quantity-${product._id}`} className="text-sm font-semibold">
+                        Quantity
+                      </label>
+                      <div className="flex items-center space-x-2 mt-2">
+                        <input
+                          id={`quantity-${product._id}`}
+                          type="number"
+                          min="1"
+                          max={product.stocks} // Prevent exceeding available stock
+                          defaultValue="1"
+                          className="w-16 p-2 border rounded-md"
+                        />
+                        <p className="text-sm text-gray-500">Stock: {product.stocks}</p>
+                      </div>
+                    </div>
+
+                    {/* Add to Cart Button */}
+                    <button
+                      onClick={() => handleAddToCart(product)}
+                      className="inline-block mt-4 mr-12 px-6 py-2 text-slate-600 bg-transparent rounded-lg hover:bg-stone-500 hover:text-white"
+                    >
+                      🛒
+                    </button>
+
+                    {/* View Details Button */}
+                    <button
+                      onClick={() => handleViewDetails(product)}
+                      className="inline-block mt-4 ml-24 px-6 py-2 text-slate-600 bg-transparent rounded-lg hover:bg-stone-500 hover:text-white"
+                    >
+                      ℹ️
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <p>No products found</p>
+              )}
+            </div>
+          )}
+        </div>
+
+      </div>
       {/* Modal for Product Details */}
       {showModal && selectedProduct && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 transition-opacity duration-300 ease-in-out opacity-100">
-            <div className="bg-white p-8 rounded-lg max-w-lg w-full shadow-lg transform transition-all duration-500 scale-95 hover:scale-100">
-            <h3 className="text-3xl font-bold text-slate-600 mb-4">{selectedProduct.name}</h3>
-            <img 
-                src={selectedProduct.imageUrl} 
-                alt={selectedProduct.name} 
-                className="w-full h-64 object-cover rounded-lg mb-4" 
-            />
-            <p className="text-lg mb-2">
-                <strong className="font-semibold">Description:</strong> {selectedProduct.description}
-            </p>
-            <p className="text-lg mb-2">
-                <strong className="font-semibold">Brand:</strong> {selectedProduct.brand}
-            </p>
-            <p className="text-lg mb-2">
-                <strong className="font-semibold">Reviews:</strong> {selectedProduct.reviews} stars
-            </p>
-            <p className="text-lg mb-4">
-                <strong className="font-semibold">Other Info:</strong> {selectedProduct.otherInfo}
-            </p>
-            <div className="flex justify-end">
-                <button
-                onClick={handleCloseModal}
-                className="px-6 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300"
-                >
-                Close
-                </button>
-            </div>
-            </div>
-        </div>
-        )}
+          <div className="bg-stone-100 p-6 rounded-lg shadow-lg w-1/3">
+            <h2 className="text-2xl font-bold mb-4">{selectedProduct.product_name}</h2>
 
+            {/* Image Section - Centered Image */}
+            <div className="mb-4 flex justify-center items-center">
+              <img
+                src={selectedProduct.product_images[currentImageIndex]?.url}
+                alt={selectedProduct.product_name}
+                className="w-96 h-96 object-contain rounded-lg mb-4" // Image with fixed size
+              />
+            </div>
+
+            {/* Image Navigation */}
+            <div className="flex justify-between mb-4">
+              <button
+                onClick={handlePreviousImage}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              >
+                Previous
+              </button>
+              <button
+                onClick={handleNextImage}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              >
+                Next
+              </button>
+            </div>
+
+            {/* Product Details */}
+            <p className="mb-4">{selectedProduct.explanation}</p>
+            <p className="mb-4 text-xl font-semibold">
+              Price: ${selectedProduct.price.toFixed(2)}
+            </p>
+
+            {/* Stock Information */}
+            <p className="mb-4 text-sm text-gray-500">Stock: {selectedProduct.stocks}</p>
+
+            {/* Close Button */}
+            <button
+              onClick={handleCloseModal}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
