@@ -12,50 +12,65 @@ import { auth } from "../firebase.js"; // Import Firebase auth
 
 export const signup = async (req, res) => {
     const { name, email, password } = req.body;
+  
     try {
-        if (!email || !password || !name) {
-            throw new Error("All fields are required");
-        }
-        const userAlreadyExists = await User.findOne({ email });
-        if (userAlreadyExists) {
-            return res.status(400).json({ success: false, message: "User already exists" });
-        }
-
-        // Create user in Firebase
-        const firebaseUser = await auth.createUser({
-            email,
-            password
+      if (!email || !password || !name) {
+        throw new Error("All fields are required");
+      }
+  
+      // Check if user already exists in MongoDB
+      const userAlreadyExists = await User.findOne({ email });
+      if (userAlreadyExists) {
+        return res.status(400).json({ success: false, message: "User already exists" });
+      }
+  
+      // Create user in Firebase
+      let firebaseUser;
+      try {
+        firebaseUser = await auth.createUser({
+          email,
+          password,
         });
-
-        const hashedPassword = await bcryptjs.hash(password, 10);
-        const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
-        const user = new User({
-            email,
-            password: hashedPassword,
-            name,
-            firebaseUid: firebaseUser.uid, // Store Firebase UID
-            verificationToken,
-            verificationTokenExpiresAt: Date.now() + 24 * 60 * 60 * 1000,
-        });
-        await user.save();
-
-        // JWT
-        generateTokenAndSetCookie(res, user._id);
-
-        await sendVerificationEmail(user.email, user.verificationToken);
-
-        res.status(201).json({
-            success: true,
-            message: "User created successfully",
-            user: {
-                ...user._doc,
-                password: undefined,
-            },
-        });
+        console.log("Firebase user created:", firebaseUser);
+      } catch (firebaseError) {
+        console.error("Error creating Firebase user:", firebaseError);
+        throw new Error(`Firebase Error: ${firebaseError.message}`);
+      }
+  
+      // Hash the password and generate a verification token
+      const hashedPassword = await bcryptjs.hash(password, 10);
+      const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
+  
+      // Create user in MongoDB
+      const user = new User({
+        email,
+        password: hashedPassword,
+        name,
+        firebaseUid: firebaseUser.uid, // Store Firebase UID
+        verificationToken,
+        verificationTokenExpiresAt: Date.now() + 24 * 60 * 60 * 1000, // Expires in 24 hours
+      });
+  
+      await user.save();
+  
+      // Generate JWT and set it in a cookie
+      generateTokenAndSetCookie(res, user._id);
+  
+      // Send verification email
+      await sendVerificationEmail(user.email, user.verificationToken);
+  
+      res.status(201).json({
+        success: true,
+        message: "User created successfully. Please verify your email.",
+        user: {
+          ...user._doc,
+          password: undefined,
+        },
+      });
     } catch (error) {
-        res.status(400).json({ success: false, message: error.message });
+      res.status(400).json({ success: false, message: error.message });
     }
-};
+  };
 
 export const login = async (req, res) => {
     const { email, password } = req.body;

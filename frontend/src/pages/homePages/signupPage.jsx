@@ -1,6 +1,6 @@
 // src/pages/homePages/signupPage.jsx
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../firebaseConfig';
 import axios from 'axios';
@@ -12,35 +12,37 @@ const SignupPage = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const idToken = await userCredential.user.getIdToken();
+      // Send user data to backend
       const response = await axios.post(
-        'http://localhost:5000/api/auth/signup',
+        "http://localhost:5000/api/auth/signup",
         { name, email, password },
-        { headers: { Authorization: `Bearer ${idToken}` }, withCredentials: true }
+        { withCredentials: true } // To send cookies
       );
+
       setSuccess(response.data.message);
-      setError('');
+      setError("");
       setTimeout(() => {
-        setName('');
-        setEmail('');
-        setPassword('');
+        setName("");
+        setEmail("");
+        setPassword("");
+        navigate("/verify");
       }, 3000);
     } catch (err) {
       if (err.response && err.response.data && err.response.data.message) {
         setError(err.response.data.message);
       } else {
-        setError('Signup failed. Please try again.');
+        setError("Signup failed. Please try again.");
       }
-      setTimeout(() => setError(''), 2000);
+      setTimeout(() => setError(""), 2000);
     }
   };
-
+  
   return (
     <div>
       <Header />
