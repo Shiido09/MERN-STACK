@@ -3,80 +3,67 @@ import { useDispatch, useSelector } from 'react-redux';
 import { TextField, Button, Select, MenuItem, InputLabel, FormControl, Box, Typography, IconButton } from '@mui/material';
 import { toast } from 'react-toastify';
 import DeleteIcon from '@mui/icons-material/Delete';
-import CircularLoader from '../../components/loader/CircularLoader'; // Adjust the import path as needed
+import CircularLoader from '../../components/loader/CircularLoader';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
 
 const ProductForm = ({ onSubmit, product }) => {
   const dispatch = useDispatch();
   const globalLoading = useSelector((state) => state.products.loading);
   const [localLoading, setLocalLoading] = useState(false);
-  const [productName, setProductName] = useState('');
-  const [price, setPrice] = useState('');
-  const [stocks, setStocks] = useState('');
-  const [category, setCategory] = useState('');
-  const [explanation, setExplanation] = useState('');
-  const [images, setImages] = useState([]);
-  const [existingImages, setExistingImages] = useState([]); // To display already uploaded images
-  const [imagesToRemove, setImagesToRemove] = useState([]); // To keep track of images to be removed
+  const [existingImages, setExistingImages] = useState(product ? product.product_images : []);
 
-  useEffect(() => {
-    // Populate form fields when editing a product
-    if (product) {
-      setProductName(product.product_name);
-      setPrice(product.price);
-      setStocks(product.stocks);
-      setCategory(product.category); // Assuming product.category contains the category
-      setExplanation(product.explanation); // Assuming product.explanation contains the explanation
-      setExistingImages(product.product_images); // Load existing images
-      setImages([]); // Reset images
-    } else {
-      // Reset form for adding new product
-      setProductName('');
-      setPrice('');
-      setStocks('');
-      setCategory('');
-      setExplanation('');
-      setExistingImages([]);
-      setImages([]);
+  const validationSchema = Yup.object({
+    productName: Yup.string().required('Product name is required'),
+    price: Yup.number().typeError('Price must be a number').required('Price is required'),
+    stocks: Yup.number().typeError('Stocks must be a number').required('Stocks are required'),
+    category: Yup.string().required('Category is required'),
+    images: Yup.array().min(1, 'At least one image is required')
+  });
+
+  const formik = useFormik({
+    initialValues: {
+      productName: product ? product.product_name : '',
+      price: product ? product.price : '',
+      stocks: product ? product.stocks : '',
+      category: product ? product.category : '',
+      images: []
+    },
+    validationSchema,
+    onSubmit: async (values) => {
+      setLocalLoading(true);
+      const formData = new FormData();
+      formData.append('product_name', values.productName);
+      formData.append('price', values.price);
+      formData.append('stocks', values.stocks);
+      formData.append('category', values.category);
+      formData.append('explanation', values.explanation);
+      values.images.forEach((image) => {
+        formData.append('product_images', image);
+      });
+
+      try {
+        await onSubmit(formData, !!product);
+        setLocalLoading(false);
+      } catch (error) {
+        console.error("Error submitting product form:", error);
+        toast.error("Failed to submit the product form. Please try again later.");
+        setLocalLoading(false);
+      }
     }
-  }, [product]);
+  });
 
   const handleImageChange = (e) => {
-    setImages([...e.target.files]);
+    formik.setFieldValue('images', Array.from(e.target.files));
   };
 
   const handleRemoveExistingImage = (index) => {
     const imageToRemove = existingImages[index];
-    setImagesToRemove([...imagesToRemove, imageToRemove]);
     setExistingImages(existingImages.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLocalLoading(true);
-
-    const formData = new FormData();
-    formData.append('product_name', productName);
-    formData.append('price', price);
-    formData.append('stocks', stocks);
-    formData.append('category', category);
-    formData.append('explanation', explanation);
-    images.forEach((image) => {
-      formData.append('product_images', image);
-    });
-    formData.append('imagesToRemove', JSON.stringify(imagesToRemove));
-
-    try {
-      await onSubmit(formData, !!product);
-      setLocalLoading(false);
-    } catch (error) {
-      console.error("Error submitting product form:", error);
-      toast.error("Failed to submit the product form. Please try again later.");
-      setLocalLoading(false);
-    }
-  };
-
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
+    <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 3 }}>
       {globalLoading ? (
         <CircularLoader />
       ) : (
@@ -86,35 +73,46 @@ const ProductForm = ({ onSubmit, product }) => {
           </Typography>
           <TextField
             label="Product Name"
-            value={productName}
-            onChange={(e) => setProductName(e.target.value)}
+            name="productName"
+            value={formik.values.productName}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
             fullWidth
-            required
             margin="normal"
+            error={formik.touched.productName && Boolean(formik.errors.productName)}
+            helperText={formik.touched.productName && formik.errors.productName}
           />
           <TextField
             label="Price"
+            name="price"
             type="number"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
+            value={formik.values.price}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
             fullWidth
-            required
             margin="normal"
+            error={formik.touched.price && Boolean(formik.errors.price)}
+            helperText={formik.touched.price && formik.errors.price}
           />
           <TextField
             label="Stocks"
+            name="stocks"
             type="number"
-            value={stocks}
-            onChange={(e) => setStocks(e.target.value)}
+            value={formik.values.stocks}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
             fullWidth
-            required
             margin="normal"
+            error={formik.touched.stocks && Boolean(formik.errors.stocks)}
+            helperText={formik.touched.stocks && formik.errors.stocks}
           />
-          <FormControl fullWidth required margin="normal">
+          <FormControl fullWidth margin="normal" error={formik.touched.category && Boolean(formik.errors.category)}>
             <InputLabel>Category</InputLabel>
             <Select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              name="category"
+              value={formik.values.category}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
             >
               <MenuItem value="Smart Appliances">Smart Appliances</MenuItem>
               <MenuItem value="Outdoor Appliances">Outdoor Appliances</MenuItem>
@@ -125,23 +123,16 @@ const ProductForm = ({ onSubmit, product }) => {
               <MenuItem value="Laundry Appliances">Laundry Appliances</MenuItem>
               <MenuItem value="Kitchen Appliances">Kitchen Appliances</MenuItem>
             </Select>
+            {formik.touched.category && formik.errors.category && (
+              <Typography variant="caption" color="error">{formik.errors.category}</Typography>
+            )}
           </FormControl>
-          <TextField
-            label="Explanation"
-            value={explanation}
-            onChange={(e) => setExplanation(e.target.value)}
-            fullWidth
-            required
-            multiline
-            rows={4}
-            margin="normal"
-          />
           <Box sx={{ display: 'flex', flexWrap: 'wrap', mt: 2 }}>
             {existingImages.map((image, index) => (
               <Box key={index} sx={{ position: 'relative', m: 1 }}>
                 <img
                   src={image.url}
-                  alt={`Product ${productName}`}
+                  alt={`Product ${formik.values.productName}`}
                   style={{ width: '100px', height: '100px', objectFit: 'cover' }}
                 />
                 <IconButton
@@ -175,6 +166,9 @@ const ProductForm = ({ onSubmit, product }) => {
               onChange={handleImageChange}
             />
           </Button>
+          {formik.touched.images && formik.errors.images && (
+            <Typography variant="caption" color="error">{formik.errors.images}</Typography>
+          )}
           <Box sx={{ mt: 3 }}>
             <Button
               type="submit"
