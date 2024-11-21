@@ -60,41 +60,74 @@ export const signup = async (req, res) => {
 export const login = async (req, res) => {
     const { email, password } = req.body;
     try {
-        const user = await User.findOne({ email });
-        if (!user) {
-            return res.status(400).json({ success: false, message: "Invalid credentials" });
-        }
-        const isPasswordValid = await bcryptjs.compare(password, user.password);
-
-        if (!isPasswordValid) {
-            return res.status(400).json({ success: false, message: "Invalid credentials" });
-        }
-
-        if (!user.isVerified) {
-            return res.status(400).json({ success: false, message: "Email not verified" });
-        }
-
-        // Verify user in Firebase
-        const firebaseUser = await auth.getUserByEmail(email);
-        if (!firebaseUser) {
-            return res.status(400).json({ success: false, message: "Invalid credentials" });
-        }
-
-        generateTokenAndSetCookie(res, user._id);
-        await user.save();
-
-        res.status(200).json({
-            success: true,
-            message: user.isAdmin ? "Logged in successfully as admin" : "Logged in successfully as user",
-            user: {
-                ...user._doc,
-                password: undefined,
-            },
-        });
+      const user = await User.findOne({ email });
+      if (!user) {
+        return res.status(400).json({ success: false, message: "Invalid credentials" });
+      }
+      const isPasswordValid = await bcryptjs.compare(password, user.password);
+  
+      if (!isPasswordValid) {
+        return res.status(400).json({ success: false, message: "Invalid credentials" });
+      }
+  
+      if (!user.isVerified) {
+        return res.status(400).json({ success: false, message: "Email not verified" });
+      }
+  
+      // Verify user in Firebase
+      const firebaseUser = await auth.getUserByEmail(email);
+      if (!firebaseUser) {
+        return res.status(400).json({ success: false, message: "Invalid credentials" });
+      }
+  
+      generateTokenAndSetCookie(res, user._id);
+      await user.save();
+  
+      res.status(200).json({
+        success: true,
+        message: user.isAdmin ? "Logged in successfully as admin" : "Logged in successfully as user",
+        user: {
+          ...user._doc,
+          password: undefined,
+        },
+      });
     } catch (error) {
-        res.status(400).json({ success: false, message: error.message });
+      res.status(400).json({ success: false, message: error.message });
     }
-};
+  };
+  
+  export const googleLogin = async (req, res) => {
+    const { idToken } = req.body;
+    try {
+      const decodedToken = await auth.verifyIdToken(idToken);
+      const email = decodedToken.email;
+  
+      let user = await User.findOne({ email });
+      if (!user) {
+        // Create a new user if not found
+        user = new User({
+          email,
+          name: decodedToken.name,
+          isVerified: true,
+        });
+        await user.save();
+      }
+  
+      generateTokenAndSetCookie(res, user._id);
+      await user.save();
+  
+      res.status(200).json({
+        success: true,
+        message: user.isAdmin ? "Logged in successfully as admin" : "Logged in successfully as user",
+        user: {
+          ...user._doc,
+          password: undefined,
+        },
+      });
+    } catch (error) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  };
 
 export const verifyEmail = async (req, res) => {
     const { code } = req.body;
