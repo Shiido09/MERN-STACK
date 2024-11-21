@@ -17,8 +17,8 @@ import ProductPage from './pages/homePages/products';
 import CartPage from './pages/homePages/cart';
 import OrderPage from './pages/homePages/orders';
 import ProfilePage from './pages/homePages/profile';
-
 import { checkAuthStatus, handleLogout } from './components/authUtils';
+import UserPage from './pages/admin-pages/UserPage';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -59,6 +59,7 @@ function App() {
           <Route path="/verify" element={<VerifyPage />} />
           <Route path="/admin/dashboard" element={<PrivateRoute element={<Dashboard />} isAuthenticated={isAuthenticated} isAdmin={isAdmin} />} />
           <Route path="/admin/products" element={<PrivateRoute element={<ProductList />} isAuthenticated={isAuthenticated} isAdmin={isAdmin} />} />
+          <Route path="/admin/users" element={<PrivateRoute element={<UserPage />} isAuthenticated={isAuthenticated} isAdmin={isAdmin} />} />
           <Route path="/index" element={<IndexPage />} />
           <Route path="/products" element={<ProductPage />} />
           <Route path="/cart" element={<PrivateRoute element={<CartPage />} isAuthenticated={isAuthenticated} />} />

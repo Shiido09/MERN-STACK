@@ -1,60 +1,54 @@
 // src/pages/admin-pages/Dashboard.jsx
 import React, { useEffect, useState } from 'react';
-import AdminLayout from './AdminLayout'; // Import AdminLayout
-import { DataGrid } from '@mui/x-data-grid'; // Import DataGrid from MUI
-import axios from 'axios'; // Import axios for making API requests
-import CircularLoader from '../../components/loader/CircularLoader'; // Import CircularLoader
-const Dashboard = () => {
-  const [rows, setRows] = useState([]); // State for rows
-  const [loading, setLoading] = useState(true); // State for loading
+import AdminLayout from './AdminLayout';
+import CircularLoader from '../../components/loader/CircularLoader';
+import axios from 'axios';
+import SalesChart from '../../components/SalesChart'; // Import SalesChart
 
-  // Fetch user data from the backend
-  const fetchUsers = async () => {
+const Dashboard = () => {
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchStats = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/auth/users', { withCredentials: true }); // Update the URL according to your API
-      const usersData = response.data.users.map(user => ({
-        id: user._id, // Use the user ID for the DataGrid
-        name: user.name,
-        email: user.email,
-        role: user.isAdmin ? 'Admin' : 'User', // Determine the role based on isAdmin flag
-      }));
-      setRows(usersData); // Set the fetched data to the rows state
+      const response = await axios.get('http://localhost:5000/api/stats', { withCredentials: true });
+      setStats(response.data);
     } catch (error) {
-      console.error("Error fetching users:", error);
+      console.error("Error fetching stats:", error);
     } finally {
-      setLoading(false); // Stop loading
+      setLoading(false);
     }
   };
 
-  // Effect to fetch users on component mount
   useEffect(() => {
-    fetchUsers();
+    fetchStats();
   }, []);
-
-  // Column definitions for the Data Grid
-  const columns = [
-    { field: 'id', headerName: 'ID', width: 90 },
-    { field: 'name', headerName: 'Name', width: 150 },
-    { field: 'email', headerName: 'Email', width: 200 },
-    { field: 'role', headerName: 'Role', width: 120 },
-  ];
 
   return (
     <AdminLayout>
       <h2 className="text-2xl font-semibold">Dashboard</h2>
       <p>Welcome to the Admin Dashboard!</p>
-      {loading ? ( // Show loading indicator while fetching data
+      {loading ? (
         <CircularLoader />
       ) : (
-        <div style={{ height: 400, width: '100%', marginTop: '20px' }}>
-          <DataGrid 
-            rows={rows} 
-            columns={columns} 
-            pageSize={5} 
-            rowsPerPageOptions={[5]} 
-            checkboxSelection 
-            disableSelectionOnClick 
-          />
+        <div>
+          <div className="grid grid-cols-3 gap-4 mt-6">
+            <div className="bg-blue-100 p-4 rounded-lg shadow">
+              <h3 className="text-xl font-bold">Total Orders</h3>
+              <p className="text-2xl font-semibold">{stats?.totalOrders || 0}</p>
+            </div>
+            <div className="bg-green-100 p-4 rounded-lg shadow">
+              <h3 className="text-xl font-bold">Total Products</h3>
+              <p className="text-2xl font-semibold">{stats?.totalSales || 0}</p>
+            </div>
+            <div className="bg-red-100 p-4 rounded-lg shadow">
+              <h3 className="text-xl font-bold">Total Users</h3>
+              <p className="text-2xl font-semibold">{stats?.totalReturns || 0}</p>
+            </div>
+          </div>
+          <div className="mt-8">
+            <SalesChart /> {/* Add SalesChart component */}
+          </div>
         </div>
       )}
     </AdminLayout>
