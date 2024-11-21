@@ -141,9 +141,40 @@ export const deleteProduct = async (req, res, next) => {
 };
 
 // READ all products
+
 export const getAllProducts = async (req, res, next) => {
   try {
-    const products = await Product.find();
+    const { categories, priceRange, searchQuery } = req.query;
+
+    let filters = {};
+
+    // Filter by category
+    if (categories) {
+      filters.category = { $in: categories.split(',') }; // Assume categories are passed as a comma-separated string
+    }
+
+    // Filter by price range
+    if (priceRange) {
+      if (priceRange === 'Under $5000') {
+        filters.price = { $lt: 5000 };
+      } else if (priceRange === '$5000 - $10000') {
+        filters.price = { $gte: 5000, $lte: 10000 };
+      } else if (priceRange === 'Above $10000') {
+        filters.price = { $gt: 10000 };
+      }
+    }
+
+    // Filter by search query (product name or description)
+    if (searchQuery) {
+      filters.$or = [
+        { product_name: { $regex: searchQuery, $options: 'i' } },  // Case insensitive search
+        { explanation: { $regex: searchQuery, $options: 'i' } }
+      ];
+    }
+
+    // Fetch filtered products
+    const products = await Product.find(filters);
+
     res.status(200).json({
       success: true,
       count: products.length,

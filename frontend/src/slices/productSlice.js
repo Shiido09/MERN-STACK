@@ -2,10 +2,21 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
-export const fetchProducts = createAsyncThunk('products/fetchProducts', async () => {
-  const response = await axios.get('http://localhost:5000/api/products', { withCredentials: true });
-  return response.data.products;
-});
+export const fetchProducts = createAsyncThunk(
+  'products/getAllProducts',
+  async ({ filters }) => {
+    const response = await axios.get('http://localhost:5000/api/products', {
+      withCredentials: true,
+      params: {  // Send filters as query parameters
+        categories: filters.selectedCategories.join(','), // Categories as comma-separated string
+        priceRange: filters.selectedPriceRanges.join(','), // Price range as a string
+        searchQuery: filters.searchQuery,
+      },
+    });
+    return response.data.products;
+  }
+);
+
 
 export const createProduct = createAsyncThunk('products/createProduct', async (formData, { dispatch }) => {
   await axios.post('http://localhost:5000/api/products', formData, { withCredentials: true });
