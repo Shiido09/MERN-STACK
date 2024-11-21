@@ -1,4 +1,3 @@
-// src/pages/homePages/loginPage.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
@@ -8,10 +7,10 @@ import Header from './Header';
 import { toast } from 'react-toastify';
 import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
 
 const LoginPage = ({ onLogin }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -24,42 +23,53 @@ const LoginPage = ({ onLogin }) => {
     }
   }, [location.state, navigate]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const idToken = await userCredential.user.getIdToken();
-      const response = await axios.post(
-        'http://localhost:5000/api/auth/login',
-        { email, password },
-        { headers: { Authorization: `Bearer ${idToken}` }, withCredentials: true }
-      );
+  const validationSchema = Yup.object({
+    email: Yup.string().email('Invalid email address').required('Email is required'),
+    password: Yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
+  });
 
-      if (response.status === 200) {
-        const user = response.data.user;
-        onLogin(user);
-        localStorage.setItem('user', JSON.stringify(user));
-        localStorage.setItem('isAuthenticated', 'true');
-        localStorage.setItem('isAdmin', user.isAdmin.toString());
-        if (user.isAdmin) {
-          navigate('/admin/dashboard');
-          toast.success('Login successfully!');
-        } else {
-          navigate('/products');
-          toast.success('Login successfully!');
+  const formik = useFormik({
+    initialValues: {
+      email: '',
+      password: '',
+    },
+    validationSchema,
+    onSubmit: async (values) => {
+      setLoading(true);
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+        const idToken = await userCredential.user.getIdToken();
+        const response = await axios.post(
+          'http://localhost:5000/api/auth/login',
+          { email: values.email, password: values.password },
+          { headers: { Authorization: `Bearer ${idToken}` }, withCredentials: true }
+        );
+
+        if (response.status === 200) {
+          const user = response.data.user;
+          onLogin(user);
+          localStorage.setItem('user', JSON.stringify(user));
+          localStorage.setItem('isAuthenticated', 'true');
+          localStorage.setItem('isAdmin', user.isAdmin.toString());
+          if (user.isAdmin) {
+            navigate('/admin/dashboard');
+            toast.success('Login successfully!');
+          } else {
+            navigate('/products');
+            toast.success('Login successfully!');
+          }
         }
+      } catch (err) {
+        if (err.response && err.response.data && err.response.data.message) {
+          setError(err.response.data.message);
+        } else {
+          setError('Login failed. Please try again.');
+        }
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      if (err.response && err.response.data && err.response.data.message) {
-        setError(err.response.data.message);
-      } else {
-        setError('Login failed. Please try again.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+  });
 
   const handleGoogleSignIn = async () => {
     try {
@@ -102,7 +112,7 @@ const LoginPage = ({ onLogin }) => {
           <div className="w-full md:w-1/2 p-8 space-y-6">
             <h2 className="text-2xl font-bold text-center text-gray-800">Log In</h2>
             {error && <p className="text-red-600 text-center">{error}</p>}
-            <form className="space-y-4" onSubmit={handleSubmit}>
+            <form className="space-y-4" onSubmit={formik.handleSubmit}>
               <div>
                 <label htmlFor="email" className="block text-base font-medium text-gray-700">
                   Email Address
@@ -110,12 +120,15 @@ const LoginPage = ({ onLogin }) => {
                 <input
                   type="email"
                   id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={formik.values.email}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
                   className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                   placeholder="Enter your email"
-                  required
                 />
+                {formik.touched.email && formik.errors.email && (
+                  <p className="text-red-600 text-sm">{formik.errors.email}</p>
+                )}
               </div>
               <div>
                 <label htmlFor="password" className="block text-base font-medium text-gray-700">
@@ -124,12 +137,15 @@ const LoginPage = ({ onLogin }) => {
                 <input
                   type="password"
                   id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  value={formik.values.password}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
                   className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                   placeholder="Enter your password"
-                  required
                 />
+                {formik.touched.password && formik.errors.password && (
+                  <p className="text-red-600 text-sm">{formik.errors.password}</p>
+                )}
               </div>
               <button
                 type="submit"
