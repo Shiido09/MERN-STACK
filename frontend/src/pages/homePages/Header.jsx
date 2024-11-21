@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { checkAuthStatus, handleLogout } from '../../components/authUtils'; // Adjust the import path as needed
-import { FaShoppingCart } from 'react-icons/fa'; // Cart icon from react-icons
+import { FaShoppingCart, FaSignInAlt, FaSignOutAlt, FaUserAlt, FaUserPlus } from 'react-icons/fa'; // Import icons from react-icons
 import { toast } from 'react-toastify'; // Import toast from react-toastify
 
 const Header = ({ setIsAuthenticated, setUser, setIsAdmin }) => {
@@ -30,17 +30,28 @@ const Header = ({ setIsAuthenticated, setUser, setIsAdmin }) => {
           <nav className="space-x-6">
             <Link to="/index" className="text-white hover:text-gray-300">Home</Link>
             <Link to="/products" className="text-white hover:text-gray-300">Products</Link>
+            <Link to="/checkout" className="text-white hover:text-gray-300">Checkout</Link> {/* nilagay q kase hindi q maview */}
             {isAuthenticated ? (
               <>
-                <Link to="/cart" className="text-white hover:text-gray-300">Cart</Link>
+                <Link to="/cart" className="text-white hover:text-gray-300">
+                  <FaShoppingCart className="inline-block text-xl" /> {/* Cart icon */}
+                </Link>
                 <Link to="/orders" className="text-white hover:text-gray-300">Orders</Link>
-                <Link to="/profile" className="text-white hover:text-gray-300">Account</Link>
-                <button onClick={logout} className="text-white hover:text-gray-300">Log Out</button>
+                <Link to="/profile" className="text-white hover:text-gray-300">
+                  <FaUserAlt className="inline-block text-xl" /> {/* Account icon */}
+                </Link>
+                <button onClick={logout} className="text-white hover:text-gray-300">
+                  <FaSignOutAlt className="inline-block text-xl" /> {/* Logout icon */}
+                </button>
               </>
             ) : (
               <>
-                <Link to="/login" className="text-white hover:text-gray-300">Log In</Link>
-                <Link to="/signup" className="text-white hover:text-gray-300">Sign Up</Link>
+                <Link to="/login" className="text-white hover:text-gray-300">
+                  <FaSignInAlt className="inline-block text-xl" /> {/* Login icon */}
+                </Link>
+                <Link to="/signup" className="text-white hover:text-gray-300">
+                  <FaUserPlus className="inline-block text-xl" /> {/* Signup icon */}
+                </Link>
               </>
             )}
           </nav>

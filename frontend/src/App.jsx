@@ -17,6 +17,7 @@ import ProductPage from './pages/homePages/products';
 import CartPage from './pages/homePages/cart';
 import OrderPage from './pages/homePages/orders';
 import ProfilePage from './pages/homePages/profile';
+import CheckoutPage from './pages/homePages/checkout';
 import { checkAuthStatus, handleLogout } from './components/authUtils';
 import UserPage from './pages/admin-pages/UserPage';
 
@@ -64,6 +65,7 @@ function App() {
           <Route path="/products" element={<ProductPage />} />
           <Route path="/cart" element={<PrivateRoute element={<CartPage />} isAuthenticated={isAuthenticated} />} />
           <Route path="/orders" element={<PrivateRoute element={<OrderPage />} isAuthenticated={isAuthenticated} />} />
+          <Route path="/checkout" element={<PrivateRoute element={<CheckoutPage />} isAuthenticated={isAuthenticated} />} />
           <Route path="/profile" element={<PrivateRoute element={<ProfilePage />} isAuthenticated={isAuthenticated} />} />
         </Routes>
       </div>

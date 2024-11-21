@@ -14,6 +14,8 @@ const CartPage = () => {
   const [error, setError] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [itemToRemove, setItemToRemove] = useState(null);
+  const [selectedItems, setSelectedItems] = useState([]); // State to track selected items
+  const [selectAll, setSelectAll] = useState(false); // State to track "Select All" checkbox
 
   useEffect(() => {
     const fetchCart = async () => {
@@ -71,8 +73,28 @@ const CartPage = () => {
     return cart.reduce((total, item) => {
       const price = item.product.price || 0;
       const quantity = item.quantity || 0;
-      return total + price * quantity;
+      if (selectedItems.includes(item.product._id)) {
+        return total + price * quantity;
+      }
+      return total;
     }, 0);
+  };
+
+  const handleSelectItem = (id) => {
+    setSelectedItems((prevSelectedItems) =>
+      prevSelectedItems.includes(id)
+        ? prevSelectedItems.filter((itemId) => itemId !== id)
+        : [...prevSelectedItems, id]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedItems([]); // Deselect all
+    } else {
+      setSelectedItems(cart.map((item) => item.product._id)); // Select all
+    }
+    setSelectAll(!selectAll); // Toggle the Select All checkbox
   };
 
   const showModal = (id) => {
@@ -96,6 +118,21 @@ const CartPage = () => {
           <h1 className="text-3xl font-bold mb-6 text-primary">
             Your Cart ({cart.length} items)
           </h1>
+
+          {/* Select All Checkbox */}
+          <div className="flex items-center mb-4">
+            <input
+              type="checkbox"
+              id="selectAll"
+              checked={selectAll}
+              onChange={handleSelectAll}
+              className="mr-2"
+            />
+            <label htmlFor="selectAll" className="text-lg text-primary">
+              Select All
+            </label>
+          </div>
+
           <div className="max-h-[500px] overflow-y-auto space-y-6 pr-4">
             {cart.length === 0 ? (
               <p className="text-lg text-gray-500">Your cart is empty.</p>
@@ -104,6 +141,12 @@ const CartPage = () => {
                 <div key={item.product._id}>
                   <div className="flex items-center justify-between bg-white shadow-lg p-6 rounded-lg">
                     <div className="flex items-center space-x-6">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.includes(item.product._id)}
+                        onChange={() => handleSelectItem(item.product._id)}
+                        className="mr-4"
+                      />
                       <img
                         src={Array.isArray(item.product.product_images) && item.product.product_images.length > 0
                           ? item.product.product_images[0].url
@@ -181,7 +224,7 @@ const CartPage = () => {
               </span>
             </Link>
             <p className="text-center text-sm text-gray-500">
-              Items placed in this bag are not reserved.
+              Items placed in this cart are not reserved.
             </p>
           </div>
         </div>
