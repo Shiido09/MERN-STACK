@@ -1,3 +1,4 @@
+// src/App.jsx
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
@@ -10,12 +11,11 @@ import ResetPasswordPage from './pages/homePages/resetPasswordPage';
 import Dashboard from './pages/admin-pages/Dashboard';
 import HomePage from './pages/homePages/home';
 import PrivateRoute from './components/PrivateRoute';
-import AdminRoute from './components/AdminRoute';
 import ProductList from './pages/admin-pages/ProductsList';
 import IndexPage from './pages/homePages/index';
 import ProductPage from './pages/homePages/products';
 import CartPage from './pages/homePages/cart';
-import { checkAuthStatus, handleLogout } from './components/authUtils';
+import { checkAuthStatus, handleLogout } from './components/authUtils'; // Import the utility functions
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -54,8 +54,8 @@ function App() {
           <Route path="/login" element={<Login onLogin={handleLogin} />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/verify" element={<VerifyPage />} />
-          <Route path="/admin/dashboard" element={<AdminRoute element={<Dashboard />} isAuthenticated={isAuthenticated} isAdmin={isAdmin} />} />
-          <Route path="/admin/products" element={<AdminRoute element={<ProductList />} isAuthenticated={isAuthenticated} isAdmin={isAdmin} />} />
+          <Route path="/admin/dashboard" element={<PrivateRoute element={<Dashboard />} isAuthenticated={isAuthenticated} isAdmin={isAdmin} />} />
+          <Route path="/admin/products" element={<PrivateRoute element={<ProductList />} isAuthenticated={isAuthenticated} isAdmin={isAdmin} />} />
           <Route path="/index" element={<IndexPage />} />
           <Route path="/products" element={<ProductPage />} />
           <Route path="/cart" element={<PrivateRoute element={<CartPage />} isAuthenticated={isAuthenticated} />} />
