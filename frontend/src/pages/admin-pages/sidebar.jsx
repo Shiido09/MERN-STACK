@@ -44,13 +44,13 @@ const Sidebar = ({ setIsAuthenticated, setUser, setIsAdmin }) => {
           <li>
             <Link to="/blogs" className={`flex items-center gap-3 p-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white ${isMinimized ? 'justify-center' : ''}`}>
               <FaBlog />
-              {!isMinimized && 'Blogs'}
+              {!isMinimized && 'Orders'}
             </Link>
           </li>
           <li>
             <Link to="/brands" className={`flex items-center gap-3 p-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white ${isMinimized ? 'justify-center' : ''}`}>
               <FaTags />
-              {!isMinimized && 'Brands'}
+              {!isMinimized && 'Reviews'}
             </Link>
           </li>
           <li>
