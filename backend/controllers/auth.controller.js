@@ -9,6 +9,7 @@ import {
 } from "../mailtrap/emails.js";
 import { User } from "../models/user.model.js";
 import { auth } from "../firebase.js"; // Import Firebase auth
+import Product from "../models/product.model.js";
 
 export const signup = async (req, res) => {
     const { name, email, password } = req.body;
@@ -269,4 +270,71 @@ export const getUserById = async (req, res) => {
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });
     }
+};
+
+export const addToCart = async (req, res) => {
+  try {
+    const { productId, quantity } = req.body;
+    const userId = req.headers.authorization?.replace('Bearer ', ''); // Extract user ID from the Authorization header
+
+    // Ensure quantity is an integer
+    const parsedQuantity = parseInt(quantity, 10);
+
+    if (!productId || isNaN(parsedQuantity) || parsedQuantity < 1) {
+      return res.status(400).json({ message: "Valid product ID and quantity are required" });
+    }
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    if (parsedQuantity > product.stocks) {
+      return res.status(400).json({ message: `Not enough stock. Only ${product.stocks} available` });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if the product already exists in the user's cart
+    const productIndex = user.cart.findIndex(item => item.product.toString() === productId);
+
+    if (productIndex !== -1) {
+      // If product already exists in the cart, update the quantity
+      user.cart[productIndex].quantity += parsedQuantity;
+
+      // Ensure the updated quantity does not exceed the available stock
+      if (user.cart[productIndex].quantity > product.stocks) {
+        return res.status(400).json({ message: `Cannot add more. Only ${product.stocks} in stock` });
+      }
+    } else {
+      // If product is not in the cart, add it
+      user.cart.push({ product: productId, quantity: parsedQuantity });
+    }
+
+    // Save the updated user cart
+    await user.save();
+
+    // Respond with a success message and the updated cart
+    res.status(200).json({ message: "Product added to cart", cart: user.cart });
+  } catch (error) {
+    console.error("Error adding to cart:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const getCart = async (req, res) => {
+  const userId = req.params.userId;
+
+  try {
+      const user = await User.findById(userId).populate('cart.product'); // Populate product details
+      if (!user) {
+          return res.status(404).json({ message: "User not found" });
+      }
+      res.status(200).json(user.cart);
+  } catch (error) {
+      res.status(500).json({ message: "Server error", error });
+  }
 };

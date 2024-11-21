@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchProducts } from '../../slices/productSlice';
 import Header from './Header'; // Assuming you have a Header component
+import { FaTimes, FaArrowLeft, FaArrowRight, FaCartPlus, FaInfoCircle } from 'react-icons/fa';
+import { toast } from 'react-toastify';
+import axios from 'axios';
 
 const ProductPage = () => {
   const [filters, setFilters] = useState({
@@ -88,6 +91,48 @@ const ProductPage = () => {
       </div>
     );
   };
+
+    const getUserId = () => {
+      const user = JSON.parse(localStorage.getItem('user')); // Parse the JSON string back to an object
+      return user ? user._id : null; // Return the user ID if it exists, otherwise null
+    };
+
+    const handleAddToCart = async (productId, quantity) => {
+      try {
+        const userId = getUserId(); // Get the user ID from localStorage
+    
+        // If no user ID is found in localStorage, handle the case (e.g., redirect to login)
+        if (!userId) {
+          console.error("User not logged in");
+          toast.error("You need to log in first!"); // Show error message with Toastify
+          return;
+        }
+    
+        const response = await axios.post('http://localhost:5000/api/auth/add', 
+          {
+            productId,
+            quantity,
+          },
+          {
+            headers: {
+              'Authorization': `Bearer ${userId}`, // Assuming the user ID or token is passed in the Authorization header
+            },
+          }
+        );
+    
+        // Log the success message to the console
+        console.log('Product added to cart:', response.data);
+    
+        // Show success message with Toastify
+        toast.success("Product added to cart successfully!"); 
+      } catch (error) {
+        console.error('Error adding to cart:', error);
+    
+        // Show error message with Toastify
+        toast.error("Error adding product to cart. Please try again.");
+      }
+    };
+  
 
   return (
     <div>
@@ -195,22 +240,24 @@ const ProductPage = () => {
                         <p className="text-sm text-gray-500">Stock: {product.stocks}</p>
                       </div>
                     </div>
+                      {/* Add to Cart Button */}
+                      <button
+                            onClick={() => {
+                              const quantity = document.getElementById(`quantity-${product._id}`).value; // Get quantity from the input field
+                              handleAddToCart(product._id, quantity); // Pass productId and quantity to the backend
+                            }}
+                            className="inline-block mt-4 mr-12 px-6 py-2 text-slate-600 bg-transparent rounded-lg hover:bg-stone-500 hover:text-white"
+                          >
+                            <FaCartPlus size={24} /> {/* Cart icon */}
+                          </button>
 
-                    {/* Add to Cart Button */}
-                    <button
-                      onClick={() => handleAddToCart(product)}
-                      className="inline-block mt-4 mr-12 px-6 py-2 text-slate-600 bg-transparent rounded-lg hover:bg-stone-500 hover:text-white"
-                    >
-                      🛒
-                    </button>
-
-                    {/* View Details Button */}
-                    <button
-                      onClick={() => handleViewDetails(product)}
-                      className="inline-block mt-4 ml-24 px-6 py-2 text-slate-600 bg-transparent rounded-lg hover:bg-stone-500 hover:text-white"
-                    >
-                      ℹ️
-                    </button>
+                          {/* View Details Button */}
+                          <button
+                            onClick={() => handleViewDetails(product)}
+                            className="inline-block mt-4 ml-20 px-6 py-2 text-slate-600 bg-transparent rounded-lg hover:bg-stone-500 hover:text-white"
+                          >
+                            <FaInfoCircle size={24} /> {/* Info icon */}
+                          </button>
                   </div>
                 ))
               ) : (
@@ -238,17 +285,20 @@ const ProductPage = () => {
 
             {/* Image Navigation */}
             <div className="flex justify-between mb-4">
+                      {/* Previous Button */}
               <button
                 onClick={handlePreviousImage}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                className="px-4 py-2 text-black bg-transparent border border-transparent rounded-lg hover:bg-gray-700"
               >
-                Previous
+                <FaArrowLeft size={24} /> {/* Left arrow icon */}
               </button>
+
+              {/* Next Button */}
               <button
                 onClick={handleNextImage}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                className="px-4 py-2 text-black bg-transparent border border-transparent rounded-lg hover:bg-gray-700"
               >
-                Next
+                <FaArrowRight size={24} /> {/* Right arrow icon */}
               </button>
             </div>
 
@@ -264,9 +314,9 @@ const ProductPage = () => {
             {/* Close Button */}
             <button
               onClick={handleCloseModal}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              className="px-4 py-2 text-black bg-transparent border border-transparent rounded-lg hover:bg-red-700"
             >
-              Close
+              <FaTimes size={24} /> {/* Close icon */}
             </button>
           </div>
         </div>
