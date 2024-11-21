@@ -1,32 +1,46 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../../firebaseConfig';
 import axios from 'axios';
 import Header from './Header';
 import { toast } from 'react-toastify';
 import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
 
-
 const LoginPage = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false); // State for spinner
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.state?.message) {
+      toast.error(location.state.message, { toastId: 'protected-route-error' });
+      navigate(location.pathname, { replace: true, state: {} }); // Clear state
+    }
+  }, [location.state, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true); // Show spinner
+    setLoading(true);
     try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const idToken = await userCredential.user.getIdToken();
       const response = await axios.post(
         'http://localhost:5000/api/auth/login',
         { email, password },
-        { withCredentials: true }
+        { headers: { Authorization: `Bearer ${idToken}` }, withCredentials: true }
       );
 
       if (response.status === 200) {
         const user = response.data.user;
         onLogin(user);
+        localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('isAdmin', user.isAdmin.toString());
         if (user.isAdmin) {
           navigate('/admin/dashboard');
           toast.success('Login successfully!');
@@ -43,7 +57,7 @@ const LoginPage = ({ onLogin }) => {
       }
       setTimeout(() => setError(''), 2000);
     } finally {
-      setLoading(false); // Hide spinner
+      setLoading(false);
     }
   };
 
@@ -52,46 +66,15 @@ const LoginPage = ({ onLogin }) => {
       <Header />
       <div className="flex justify-center items-center min-h-screen bg-stone-200">
         <div className="flex w-full max-w-5xl bg-white shadow-lg rounded-lg transition-shadow duration-300 hover:shadow-2xl">
-          {/* Image Container */}
           <div className="hidden md:flex md:w-1/2">
-            <img
-              src="/images/login.jpg" // Replace with your image URL
-              alt="Login"
-              className="object-cover w-full h-full rounded-l-lg"
-            />
+            <img src="/images/signup.jpg" alt="Sign Up" className="object-cover w-full h-full rounded-l-lg" />
           </div>
-
-          {/* Login Form Container */}
-          <div className="w-full md:w-1/2 p-8 pt-24 space-y-6 relative">
-            <h2 className="text-3xl font-bold text-center text-gray-900">Log In</h2>
+          <div className="w-full md:w-1/2 p-8 space-y-6">
+            <h2 className="text-2xl font-bold text-center text-gray-800">Log In</h2>
             {error && <p className="text-red-600 text-center">{error}</p>}
-
-            {/* Spinner */}
-            {loading && (
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                  zIndex: 10,
-                }}
-              >
-                <CircularProgress size={60} />
-              </Box>
-            )}
-
             <form className="space-y-4" onSubmit={handleSubmit}>
               <div>
-                <label
-                  htmlFor="email"
-                  className="block text-base font-medium text-gray-700"
-                >
+                <label htmlFor="email" className="block text-base font-medium text-gray-700">
                   Email Address
                 </label>
                 <input
@@ -105,10 +88,7 @@ const LoginPage = ({ onLogin }) => {
                 />
               </div>
               <div>
-                <label
-                  htmlFor="password"
-                  className="block text-base font-medium text-gray-700"
-                >
+                <label htmlFor="password" className="block text-base font-medium text-gray-700">
                   Password
                 </label>
                 <input
@@ -121,31 +101,30 @@ const LoginPage = ({ onLogin }) => {
                   required
                 />
               </div>
-              <div className="text-right">
-                <Link
-                  to="/forgot-password"
-                  className="text-base text-indigo-600 hover:underline"
-                >
-                  Forgot password?
-                </Link>
-              </div>
               <button
                 type="submit"
-                className="w-full bg-slate-600 text-white py-2 px-4 rounded-md hover:bg-slate-800 transition duration-200"
+                className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700"
+                disabled={loading}
               >
-                Log In
+                {loading ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                    <CircularProgress size={24} color="inherit" />
+                  </Box>
+                ) : (
+                  'Log In'
+                )}
               </button>
             </form>
             <div className="text-center">
-              <p className="text-base text-gray-600">
-                Don’t have an account?{' '}
-                <Link
-                  to="/signup"
-                  className="text-indigo-600 hover:underline"
-                >
-                  Create one
-                </Link>
-              </p>
+              <Link to="/forgot-password" className="text-indigo-600 hover:text-indigo-800">
+                Forgot Password?
+              </Link>
+            </div>
+            <div className="text-center">
+              <span>Don't have an account? </span>
+              <Link to="/signup" className="text-indigo-600 hover:text-indigo-800">
+                Sign Up
+              </Link>
             </div>
           </div>
         </div>

@@ -8,7 +8,7 @@ import {
     sendResetSuccessEmail,
 } from "../mailtrap/emails.js";
 import { User } from "../models/user.model.js";
-import ErrorHandler from '../utils/errorHandler.js'; // Correct import for ErrorHandler
+import { auth } from "../firebase.js"; // Import Firebase auth
 
 export const signup = async (req, res) => {
     const { name, email, password } = req.body;
@@ -21,12 +21,19 @@ export const signup = async (req, res) => {
             return res.status(400).json({ success: false, message: "User already exists" });
         }
 
+        // Create user in Firebase
+        const firebaseUser = await auth.createUser({
+            email,
+            password
+        });
+
         const hashedPassword = await bcryptjs.hash(password, 10);
         const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
         const user = new User({
             email,
             password: hashedPassword,
             name,
+            firebaseUid: firebaseUser.uid, // Store Firebase UID
             verificationToken,
             verificationTokenExpiresAt: Date.now() + 24 * 60 * 60 * 1000,
         });
@@ -40,6 +47,45 @@ export const signup = async (req, res) => {
         res.status(201).json({
             success: true,
             message: "User created successfully",
+            user: {
+                ...user._doc,
+                password: undefined,
+            },
+        });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+export const login = async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(400).json({ success: false, message: "Invalid credentials" });
+        }
+        const isPasswordValid = await bcryptjs.compare(password, user.password);
+
+        if (!isPasswordValid) {
+            return res.status(400).json({ success: false, message: "Invalid credentials" });
+        }
+
+        if (!user.isVerified) {
+            return res.status(400).json({ success: false, message: "Email not verified" });
+        }
+
+        // Verify user in Firebase
+        const firebaseUser = await auth.getUserByEmail(email);
+        if (!firebaseUser) {
+            return res.status(400).json({ success: false, message: "Invalid credentials" });
+        }
+
+        generateTokenAndSetCookie(res, user._id);
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: user.isAdmin ? "Logged in successfully as admin" : "Logged in successfully as user",
             user: {
                 ...user._doc,
                 password: undefined,
@@ -69,39 +115,6 @@ export const verifyEmail = async (req, res) => {
         res.status(200).json({
             success: true,
             message: "Email verified successfully",
-            user: {
-                ...user._doc,
-                password: undefined,
-            },
-        });
-    } catch (error) {
-        res.status(400).json({ success: false, message: error.message });
-    }
-};
-
-export const login = async (req, res) => {
-    const { email, password } = req.body;
-    try {
-        const user = await User.findOne({ email });
-        if (!user) {
-            return res.status(400).json({ success: false, message: "Invalid credentials" });
-        }
-        const isPasswordValid = await bcryptjs.compare(password, user.password);
-
-        if (!isPasswordValid) {
-            return res.status(400).json({ success: false, message: "Invalid credentials" });
-        }
-
-        if (!user.isVerified) {
-            return res.status(400).json({ success: false, message: "Email not verified" });
-        }
-
-        generateTokenAndSetCookie(res, user._id);
-        await user.save();
-
-        res.status(200).json({
-            success: true,
-            message: user.isAdmin ? "Logged in successfully as admin" : "Logged in successfully as user",
             user: {
                 ...user._doc,
                 password: undefined,

@@ -30,6 +30,10 @@ const userSchema = new mongoose.Schema({
     resetPasswordExpiresAt: Date,
     verificationToken: String,
     verificationTokenExpiresAt: Date,
+    firebaseUid: {
+        type: String,
+        required: true,
+    },
 }, { timestamps: true });
 
 export const User = mongoose.model("User", userSchema);

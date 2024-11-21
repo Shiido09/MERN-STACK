@@ -1,15 +1,17 @@
+// src/pages/admin-pages/sidebar.jsx
 import React, { useState } from "react";
 import { FaTachometerAlt, FaUser, FaBlog, FaTags, FaBox, FaSignOutAlt, FaAngleLeft, FaAngleRight } from "react-icons/fa";
-import { useNavigate } from "react-router-dom"; 
+import { Link, useNavigate } from "react-router-dom"; 
 import { handleLogout } from '../../components/authUtils'; // Adjusted path
-
+import { toast } from "react-toastify";
 const Sidebar = ({ setIsAuthenticated, setUser, setIsAdmin }) => {
   const navigate = useNavigate(); 
   const [isMinimized, setIsMinimized] = useState(false); // State to control sidebar visibility
 
   const logout = async () => {
-    await handleLogout(setIsAuthenticated, setUser, setIsAdmin); // Call the imported function
+    await handleLogout(setIsAuthenticated, setUser, setIsAdmin);
     navigate('/login'); // Navigate to login page after logout
+    toast.success("Logged out successfully");
   };
 
   const toggleSidebar = () => {
@@ -28,34 +30,34 @@ const Sidebar = ({ setIsAuthenticated, setUser, setIsAdmin }) => {
       <nav className="flex-1 px-4">
         <ul className="space-y-4">
           <li>
-            <a href="/admin/dashboard" className={`flex items-center gap-3 p-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white ${isMinimized ? 'justify-center' : ''}`}>
+            <Link to="/admin/dashboard" className={`flex items-center gap-3 p-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white ${isMinimized ? 'justify-center' : ''}`}>
               <FaTachometerAlt />
               {!isMinimized && 'Dashboard'} {/* Show text only if not minimized */}
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="/user" className={`flex items-center gap-3 p-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white ${isMinimized ? 'justify-center' : ''}`}>
+            <Link to="/user" className={`flex items-center gap-3 p-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white ${isMinimized ? 'justify-center' : ''}`}>
               <FaUser />
               {!isMinimized && 'User'}
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="/blogs" className={`flex items-center gap-3 p-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white ${isMinimized ? 'justify-center' : ''}`}>
+            <Link to="/blogs" className={`flex items-center gap-3 p-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white ${isMinimized ? 'justify-center' : ''}`}>
               <FaBlog />
               {!isMinimized && 'Blogs'}
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="/brands" className={`flex items-center gap-3 p-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white ${isMinimized ? 'justify-center' : ''}`}>
+            <Link to="/brands" className={`flex items-center gap-3 p-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white ${isMinimized ? 'justify-center' : ''}`}>
               <FaTags />
               {!isMinimized && 'Brands'}
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="/admin/products" className={`flex items-center gap-3 p-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white ${isMinimized ? 'justify-center' : ''}`}>
+            <Link to="/admin/products" className={`flex items-center gap-3 p-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white ${isMinimized ? 'justify-center' : ''}`}>
               <FaBox />
               {!isMinimized && 'Products'}
-            </a>
+            </Link>
           </li>
         </ul>
       </nav>
