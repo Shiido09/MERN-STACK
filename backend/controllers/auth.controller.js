@@ -338,3 +338,52 @@ export const getCart = async (req, res) => {
       res.status(500).json({ message: "Server error", error });
   }
 };
+
+export const updateCartItemQuantity = async (req, res) => {
+  const { userId, productId } = req.params;
+  const { quantity } = req.body;
+
+  if (quantity <= 0) {
+    return res.status(400).json({ message: 'Quantity must be greater than zero.' });
+  }
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    const cartItem = user.cart.find(
+      (item) => item.product.toString() === productId
+    );
+
+    if (!cartItem) {
+      return res.status(404).json({ message: 'Product not found in cart.' });
+    }
+
+    cartItem.quantity = quantity;
+    await user.save();
+
+    res.status(200).json({ message: 'Cart updated successfully.', cart: user.cart });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
+// Remove item from cart
+export const removeCartItem = async (req, res) => {
+  const { userId, productId } = req.params;
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    user.cart = user.cart.filter(
+      (item) => item.product.toString() !== productId
+    );
+
+    await user.save();
+
+    res.status(200).json({ message: 'Item removed successfully.', cart: user.cart });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};

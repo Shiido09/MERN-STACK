@@ -1,5 +1,5 @@
 import express from "express";
-import { signup, login, googleLogin, logout, verifyEmail, forgotPassword, resetPassword, getUsers, getUserById, addToCart } from "../controllers/auth.controller.js";
+import { signup, login, googleLogin, logout, verifyEmail, forgotPassword, resetPassword, getUsers, getUserById, addToCart, getCart, updateCartItemQuantity, removeCartItem } from "../controllers/auth.controller.js";
 import { isAuthenticatedUser, authorizeAdmin } from "../middleware/authUsers.js"; // Only use these two now
 
 const router = express.Router();
@@ -19,5 +19,8 @@ router.post("/signup", signup);
 
 //cart
 router.post('/add', addToCart);
+router.get('/:userId/cart', getCart);
+router.put('/:userId/cart/:productId', updateCartItemQuantity);
+router.delete('/:userId/cart/:productId', removeCartItem);
 
 export default router;
