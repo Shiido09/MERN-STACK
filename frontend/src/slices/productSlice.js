@@ -5,7 +5,6 @@ import { toast } from 'react-toastify';
 export const filterProduct = createAsyncThunk(
   'products/filterProduct',
   async ({ filters }) => {
-    
     const response = await axios.get('http://localhost:5000/api/products/filter', {
       withCredentials: true,
       params: {  // Send filters as query parameters
@@ -38,10 +37,17 @@ export const deleteProduct = createAsyncThunk('products/deleteProduct', async (i
   dispatch(fetchProducts());
 });
 
-export const deleteSelectedProducts = createAsyncThunk('products/deleteSelectedProducts', async (selectedRows, { dispatch }) => {
-  await Promise.all(selectedRows.map(id => axios.delete(`http://localhost:5000/api/products/${id}`, { withCredentials: true })));
-  dispatch(fetchProducts());
-  toast.success('Selected products deleted successfully!');
+export const fetchProductReviews = createAsyncThunk('products/fetchProductReviews', async (productId) => {
+  const response = await axios.get(`http://localhost:5000/api/products/${productId}/reviews`, {
+    withCredentials: true,
+  });
+  return response.data;
+});
+
+export const deleteProductReview = createAsyncThunk('products/deleteProductReview', async ({ productId, reviewId }) => {
+  await axios.delete(`http://localhost:5000/api/products/${productId}/review/${reviewId}`, {
+    withCredentials: true,
+  });
 });
 
 const productsSlice = createSlice({
@@ -78,9 +84,22 @@ const productsSlice = createSlice({
       .addCase(filterProduct.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message;
+      })
+
+      // Cases for fetchProductReviews
+      .addCase(fetchProductReviews.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchProductReviews.fulfilled, (state, action) => {
+        state.loading = false;
+        // Assuming you want to store reviews in the state
+        state.reviews = action.payload.reviews;
+      })
+      .addCase(fetchProductReviews.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message;
       });
   },
 });
-
 
 export default productsSlice.reducer;

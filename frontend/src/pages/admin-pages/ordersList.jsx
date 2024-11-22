@@ -45,7 +45,7 @@ const OrderList = () => {
         `http://localhost:5000/api/orders/${selectedOrder._id}/status`,
         { status: newStatus },
         {
-          withCredentials: true, // Include this to send cookies with the request
+          withCredentials: true, 
         }
       );
 

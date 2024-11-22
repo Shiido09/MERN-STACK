@@ -4,11 +4,12 @@ import { IconButton, Button, Box, Typography, Table, TableBody, TableCell, Table
 import EditIcon from '@mui/icons-material/Edit';
 import AdminLayout from './AdminLayout';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchProducts, deleteProduct, createProduct, updateProduct } from '../../slices/productSlice';
+import { fetchProducts, deleteProduct, createProduct, updateProduct, fetchProductReviews, deleteProductReview } from '../../slices/productSlice';
 import ProductForm from './ProductForm'; // Ensure this path is correct
 import Modal from './Modal'; // Import the new Modal component
 import CircularLoader from '../../components/loader/CircularLoader'; // Adjust the import path as needed
 import { toast } from 'react-toastify'; // Import toast from react-toastify
+import axios from 'axios';
 
 const Products = () => {
   const dispatch = useDispatch();
@@ -18,6 +19,10 @@ const Products = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [productsToDelete, setProductsToDelete] = useState([]);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [isReviewsModalOpen, setIsReviewsModalOpen] = useState(false);
+  const [isDeleteReviewDialogOpen, setIsDeleteReviewDialogOpen] = useState(false);
+  const [reviewToDelete, setReviewToDelete] = useState(null);
 
   useEffect(() => {
     dispatch(fetchProducts());
@@ -85,6 +90,46 @@ const Products = () => {
     }
   };
 
+  const handleViewReviews = async (productId) => {
+    try {
+      const response = await dispatch(fetchProductReviews(productId)).unwrap();
+      setReviews(response.reviews);
+      setSelectedProduct(products.find(product => product._id === productId)); // Ensure selectedProduct is set
+      setIsReviewsModalOpen(true);
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      toast.error('Failed to fetch reviews.');
+    }
+  };
+
+  const handleDeleteReview = (productId, reviewId) => {
+    setReviewToDelete({ productId, reviewId });
+    setIsDeleteReviewDialogOpen(true);
+  };
+
+  const confirmDeleteReview = async () => {
+    if (!reviewToDelete) return;
+
+    const { productId, reviewId } = reviewToDelete;
+
+    try {
+      await dispatch(deleteProductReview({ productId, reviewId })).unwrap();
+      toast.success('Review deleted successfully!');
+      setIsDeleteReviewDialogOpen(false);
+      setReviewToDelete(null);
+      // Optionally, refresh the reviews list
+      handleViewReviews(productId);
+    } catch (error) {
+      console.error('Error deleting review:', error);
+      toast.error('Failed to delete review.');
+    }
+  };
+
+  const handleCloseReviewsModal = () => {
+    setIsReviewsModalOpen(false);
+    setReviews([]);
+  };
+
   const columns = [
     { name: 'product_name', label: 'Product Name' },
     { name: 'category', label: 'Category' },
@@ -113,9 +158,14 @@ const Products = () => {
       label: 'Actions',
       options: {
         customBodyRender: (value, tableMeta) => (
-          <IconButton color="primary" onClick={() => handleEdit(products[tableMeta.rowIndex])}>
-            <EditIcon />
-          </IconButton>
+          <div>
+            <IconButton color="primary" onClick={() => handleEdit(products[tableMeta.rowIndex])}>
+              <EditIcon />
+            </IconButton>
+            <Button variant="contained" color="secondary" onClick={() => handleViewReviews(products[tableMeta.rowIndex]._id)}>
+              View Reviews
+            </Button>
+          </div>
         ),
       },
     },
@@ -164,9 +214,11 @@ const Products = () => {
           options={options}
         />
       )}
+
       <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={selectedProduct ? 'Edit Product' : 'Add Product'}>
         <ProductForm product={selectedProduct} onSubmit={handleProductSubmit} />
       </Modal>
+
       <Dialog
         open={isDeleteDialogOpen}
         onClose={handleCloseDeleteDialog}
@@ -183,6 +235,56 @@ const Products = () => {
           </Button>
           <Button onClick={handleDeleteProduct} color="secondary" disabled={isDeleting}>
             {isDeleting ? <CircularLoader /> : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={isReviewsModalOpen} onClose={handleCloseReviewsModal}>
+        <DialogTitle>Product Reviews</DialogTitle>
+        <DialogContent>
+          {reviews.length > 0 ? (
+            reviews.map((review, index) => (
+              <div key={index} className="mb-4">
+                <Typography variant="body1"><strong>{review.user.name}</strong></Typography>
+                <Typography variant="body2">Rating: {review.rating}</Typography>
+                <Typography variant="body2">{review.comment}</Typography>
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  onClick={() => handleDeleteReview(selectedProduct?._id, review._id)}
+                  disabled={!selectedProduct}
+                >
+                  Delete Review
+                </Button>
+              </div>
+            ))
+          ) : (
+            <Typography variant="body2">No reviews available.</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseReviewsModal} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={isDeleteReviewDialogOpen}
+        onClose={() => setIsDeleteReviewDialogOpen(false)}
+      >
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this review?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsDeleteReviewDialogOpen(false)} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={confirmDeleteReview} color="secondary">
+            Delete
           </Button>
         </DialogActions>
       </Dialog>

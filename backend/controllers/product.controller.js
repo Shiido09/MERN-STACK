@@ -199,8 +199,6 @@ export const filterProduct = async (req, res) => {
   }
 };
 
-
-
 // READ a single product by ID
 export const getProductById = async (req, res, next) => {
   try {
@@ -215,5 +213,103 @@ export const getProductById = async (req, res, next) => {
   } catch (error) {
     console.error("Error fetching product:", error);
     next(new ErrorHandler("Error fetching product", 500));
+  }
+};
+
+export const getProductReviews = async (req, res, next) => {
+  try {
+    const product = await Product.findById(req.params.id).populate('reviews.user', 'name');
+    if (!product) {
+      return next(new ErrorHandler('Product not found', 404));
+    }
+    res.status(200).json({
+      success: true,
+      reviews: product.reviews,
+    });
+  } catch (error) {
+    console.error('Error fetching product reviews:', error);
+    next(new ErrorHandler('Error fetching product reviews', 500));
+  }
+};
+
+// demo review lang yan para mapagana ko delete, pwede mo naman gawin reference 
+// export const createProductReview = async (req, res, next) => {
+//   try {
+//     const { rating, comment } = req.body;
+//     const productId = req.params.id;
+//     const userId = req.user._id;
+
+//     const product = await Product.findById(productId);
+
+//     if (!product) {
+//       return next(new ErrorHandler('Product not found', 404));
+//     }
+
+//     const alreadyReviewed = product.reviews.find(
+//       (review) => review.user.toString() === userId.toString()
+//     );
+
+//     if (alreadyReviewed) {
+//       return next(new ErrorHandler('Product already reviewed', 400));
+//     }
+
+//     const review = {
+//       user: userId,
+//       rating: Number(rating),
+//       comment,
+//     };
+
+//     product.reviews.push(review);
+//     product.numOfReviews = product.reviews.length;
+
+//     product.ratings =
+//       product.reviews.reduce((acc, item) => item.rating + acc, 0) /
+//       product.reviews.length;
+
+//     await product.save({ validateBeforeSave: false });
+
+//     res.status(201).json({
+//       success: true,
+//       message: 'Review added successfully',
+//     });
+//   } catch (error) {
+//     console.error('Error creating review:', error);
+//     next(new ErrorHandler('Error creating review', 500));
+//   }
+// };
+
+export const deleteProductReview = async (req, res, next) => {
+  try {
+    const { productId, reviewId } = req.params;
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      return next(new ErrorHandler('Product not found', 404));
+    }
+
+    const reviewIndex = product.reviews.findIndex(
+      (review) => review._id.toString() === reviewId.toString()
+    );
+
+    if (reviewIndex === -1) {
+      return next(new ErrorHandler('Review not found', 404));
+    }
+
+    product.reviews.splice(reviewIndex, 1);
+    product.numOfReviews = product.reviews.length;
+
+    product.ratings =
+      product.reviews.reduce((acc, item) => item.rating + acc, 0) /
+      (product.reviews.length || 1);
+
+    await product.save({ validateBeforeSave: false });
+
+    res.status(200).json({
+      success: true,
+      message: 'Review deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting review:', error);
+    next(new ErrorHandler('Error deleting review', 500));
   }
 };
