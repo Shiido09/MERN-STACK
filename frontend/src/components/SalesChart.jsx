@@ -1,7 +1,7 @@
-// src/components/SalesChart.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Line } from 'react-chartjs-2';
 import { format, subDays } from 'date-fns';
+import axios from 'axios';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -9,27 +9,50 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 const SalesChart = () => {
   const [startDate, setStartDate] = useState(subDays(new Date(), 30));
   const [endDate, setEndDate] = useState(new Date());
+  const [salesData, setSalesData] = useState([]);
 
-  const salesData = [
-    { date: subDays(new Date(), 30), sales: 100 },
-    { date: subDays(new Date(), 25), sales: 200 },
-    { date: subDays(new Date(), 20), sales: 150 },
-    { date: subDays(new Date(), 15), sales: 300 },
-    { date: subDays(new Date(), 10), sales: 250 },
-    { date: subDays(new Date(), 5), sales: 400 },
-    { date: new Date(), sales: 350 },
-  ];
+  useEffect(() => {
+    const fetchSalesData = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/orders/sales', {
+          params: {
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+          },
+          withCredentials: true,
+        });
 
-  const filteredData = salesData.filter(
-    (data) => data.date >= startDate && data.date <= endDate
-  );
+        // Aggregate sales data by date
+        const aggregatedData = response.data.reduce((acc, sale) => {
+          const date = format(new Date(sale.date), 'yyyy-MM-dd');
+          if (!acc[date]) {
+            acc[date] = 0;
+          }
+          acc[date] += sale.total;
+          return acc;
+        }, {});
+
+        // Convert aggregated data to an array
+        const aggregatedArray = Object.keys(aggregatedData).map(date => ({
+          date,
+          total: aggregatedData[date],
+        }));
+
+        setSalesData(aggregatedArray);
+      } catch (error) {
+        console.error('Error fetching sales data:', error);
+      }
+    };
+
+    fetchSalesData();
+  }, [startDate, endDate]);
 
   const chartData = {
-    labels: filteredData.map((data) => format(data.date, 'MM/dd/yyyy')),
+    labels: salesData.map((data) => format(new Date(data.date), 'MM/dd/yyyy')),
     datasets: [
       {
         label: 'Sales',
-        data: filteredData.map((data) => data.sales),
+        data: salesData.map((data) => data.total),
         borderColor: 'rgba(75, 192, 192, 1)',
         backgroundColor: 'rgba(75, 192, 192, 0.2)',
       },

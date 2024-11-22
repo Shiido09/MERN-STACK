@@ -1,4 +1,3 @@
-// src/pages/admin-pages/Dashboard.jsx
 import React, { useEffect, useState } from 'react';
 import AdminLayout from './AdminLayout';
 import CircularLoader from '../../components/loader/CircularLoader';
@@ -11,7 +10,7 @@ const Dashboard = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/stats', { withCredentials: true });
+      const response = await axios.get('http://localhost:5000/api/orders/stats', { withCredentials: true });
       setStats(response.data);
     } catch (error) {
       console.error("Error fetching stats:", error);
@@ -39,11 +38,11 @@ const Dashboard = () => {
             </div>
             <div className="bg-green-100 p-4 rounded-lg shadow">
               <h3 className="text-xl font-bold">Total Products</h3>
-              <p className="text-2xl font-semibold">{stats?.totalSales || 0}</p>
+              <p className="text-2xl font-semibold">{stats?.totalProducts || 0}</p>
             </div>
             <div className="bg-red-100 p-4 rounded-lg shadow">
               <h3 className="text-xl font-bold">Total Users</h3>
-              <p className="text-2xl font-semibold">{stats?.totalReturns || 0}</p>
+              <p className="text-2xl font-semibold">{stats?.totalUsers || 0}</p>
             </div>
           </div>
           <div className="mt-8">

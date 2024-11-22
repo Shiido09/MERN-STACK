@@ -87,9 +87,6 @@ export const placeOrder = async (req, res) => {
   }
 };
 
-
-
-
 export const getUserOrders = async (req, res) => {
   try {
     const orders = await Order.find({ user: req.user._id }).populate(
@@ -101,4 +98,44 @@ export const getUserOrders = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch orders", error: error.message });
   }
 
+};
+
+export const getStats = async (req, res) => {
+  try {
+    const totalOrders = await Order.countDocuments();
+    const totalProducts = await Product.countDocuments();
+    const totalUsers = await User.countDocuments();
+
+    res.status(200).json({
+      totalOrders,
+      totalProducts,
+      totalUsers,
+    });
+  } catch (error) {
+    console.error('Error fetching stats:', error);
+    res.status(500).json({ message: 'Error fetching stats' });
+  }
+};
+
+export const getSalesData = async (req, res) => {
+  const { startDate, endDate } = req.query;
+
+  try {
+    const orders = await Order.find({
+      createdAt: {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      },
+    });
+
+    const salesData = orders.map(order => ({
+      date: order.createdAt,
+      total: order.totalPrice,
+    }));
+
+    res.status(200).json(salesData);
+  } catch (error) {
+    console.error('Error fetching sales data:', error);
+    res.status(500).json({ message: 'Error fetching sales data' });
+  }
 };
