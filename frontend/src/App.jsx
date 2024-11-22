@@ -59,9 +59,9 @@ function App() {
           <Route path="/login" element={<Login onLogin={handleLogin} />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/verify" element={<VerifyPage />} />
-          <Route path="/admin/dashboard" element={<PrivateRoute element={<Dashboard />} isAuthenticated={isAuthenticated} isAdmin={isAdmin} />} />
-          <Route path="/admin/products" element={<PrivateRoute element={<ProductList />} isAuthenticated={isAuthenticated} isAdmin={isAdmin} />} />
-          <Route path="/admin/users" element={<PrivateRoute element={<UserPage />} isAuthenticated={isAuthenticated} isAdmin={isAdmin} />} />
+          <Route path="/admin/dashboard" element={<PrivateRoute element={<Dashboard />} isAuthenticated={isAuthenticated} isAdmin={isAdmin} adminOnly={true} />} />
+          <Route path="/admin/products" element={<PrivateRoute element={<ProductList />} isAuthenticated={isAuthenticated} isAdmin={isAdmin} adminOnly={true} />} />
+          <Route path="/admin/users" element={<PrivateRoute element={<UserPage />} isAuthenticated={isAuthenticated} isAdmin={isAdmin} adminOnly={true} />} />
           <Route path="/index" element={<IndexPage />} />
           <Route path="/products" element={<ProductPage />} />
           <Route path="/cart" element={<PrivateRoute element={<CartPage />} isAuthenticated={isAuthenticated} />} />
