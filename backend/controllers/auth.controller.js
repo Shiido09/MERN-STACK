@@ -116,8 +116,8 @@ export const googleLogin = async (req, res) => {
                 name: decodedToken.name,
                 password: randomPassword,
                 firebaseUid,
-                phoneNo: 'defaultPhoneNo', // Replace with actual phone number input
-                address: 'defaultAddress', // Replace with actual address input
+                phoneNo: 'N/A', // Replace with actual phone number input
+                address: 'N/A', // Replace with actual address input
                 isVerified: true,
             });
             await user.save();
