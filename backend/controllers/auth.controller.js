@@ -1,5 +1,7 @@
 import bcryptjs from "bcryptjs";
 import crypto from "crypto";
+import cloudinary from "../cloudinaryConfig.js";
+import multer from "multer";
 import { generateTokenAndSetCookie } from "../utils/generateTokenAndSetCookie.js";
 import {
     sendVerificationEmail,
@@ -11,67 +13,131 @@ import { User } from "../models/user.model.js";
 import { auth } from "../firebase.js"; // Import Firebase auth
 import Product from "../models/product.model.js";
 
+const upload = multer({ storage: multer.memoryStorage() });
+
 export const signup = async (req, res) => {
-    const { name, email, password } = req.body;
-  
+    const { name, email, password, address, phoneNo } = req.body;
+    const avatar = req.file;
+
     try {
-      if (!email || !password || !name) {
-        throw new Error("All fields are required");
-      }
-  
-      // Check if user already exists in MongoDB
-      const userAlreadyExists = await User.findOne({ email });
-      if (userAlreadyExists) {
-        return res.status(400).json({ success: false, message: "User already exists" });
-      }
-  
-      // Create user in Firebase
-      let firebaseUser;
-      try {
-        firebaseUser = await auth.createUser({
-          email,
-          password,
-        });
-        console.log("Firebase user created:", firebaseUser);
-      } catch (firebaseError) {
-        console.error("Error creating Firebase user:", firebaseError);
-        throw new Error(`Firebase Error: ${firebaseError.message}`);
-      }
-  
-      // Hash the password and generate a verification token
-      const hashedPassword = await bcryptjs.hash(password, 10);
-      const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
-  
-      // Create user in MongoDB
-      const user = new User({
-        email,
-        password: hashedPassword,
-        name,
-        firebaseUid: firebaseUser.uid, // Store Firebase UID
-        verificationToken,
-        verificationTokenExpiresAt: Date.now() + 24 * 60 * 60 * 1000, // Expires in 24 hours
-      });
-  
-      await user.save();
-  
-      // Generate JWT and set it in a cookie
-      generateTokenAndSetCookie(res, user._id);
-  
-      // Send verification email
-      await sendVerificationEmail(user.email, user.verificationToken);
-  
-      res.status(201).json({
-        success: true,
-        message: "User created successfully. Please verify your email.",
-        user: {
-          ...user._doc,
-          password: undefined,
-        },
-      });
+        if (!email || !password || !name || !address || !phoneNo) {
+            throw new Error("All fields are required");
+        }
+
+        const userAlreadyExists = await User.findOne({ email });
+        if (userAlreadyExists) {
+            return res.status(400).json({ success: false, message: "User already exists" });
+        }
+
+        let firebaseUser;
+        try {
+            firebaseUser = await auth.createUser({
+                email,
+                password,
+            });
+        } catch (firebaseError) {
+            console.error("Error creating Firebase user:", firebaseError);
+            throw new Error(`Firebase Error: ${firebaseError.message}`);
+        }
+
+        const hashedPassword = await bcryptjs.hash(password, 10);
+        const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
+
+        let avatarLink = {};
+        if (avatar) {
+            const stream = cloudinary.uploader.upload_stream((error, result) => {
+                if (error) {
+                    console.error("Error uploading avatar to Cloudinary:", error);
+                    return res.status(500).json({ success: false, message: "Error uploading avatar to Cloudinary" });
+                }
+                avatarLink = {
+                    public_id: result.public_id,
+                    url: result.secure_url,
+                };
+
+                // Create user after avatar upload
+                createUser();
+            });
+
+            stream.end(avatar.buffer);
+        } else {
+            // Create user without avatar
+            createUser();
+        }
+
+        async function createUser() {
+            const user = new User({
+                email,
+                password: hashedPassword,
+                name,
+                address,
+                phoneNo,
+                firebaseUid: firebaseUser.uid,
+                verificationToken,
+                verificationTokenExpiresAt: Date.now() + 24 * 60 * 60 * 1000,
+                avatar: avatarLink,
+            });
+
+            await user.save();
+
+            generateTokenAndSetCookie(res, user._id);
+
+            await sendVerificationEmail(user.email, user.verificationToken);
+
+            res.status(201).json({
+                success: true,
+                message: "User created successfully. Please verify your email.",
+                user: {
+                    ...user._doc,
+                    password: undefined,
+                },
+            });
+        }
     } catch (error) {
-      res.status(400).json({ success: false, message: error.message });
+        res.status(400).json({ success: false, message: error.message });
     }
-  };
+};
+
+export const googleLogin = async (req, res) => {
+    const { idToken } = req.body;
+    try {
+        const decodedToken = await auth.verifyIdToken(idToken);
+        const email = decodedToken.email;
+        const firebaseUid = decodedToken.uid;
+
+        let user = await User.findOne({ email });
+        if (!user) {
+            // Generate a random password
+            const randomPassword = crypto.randomBytes(16).toString('hex');
+
+            // Create a new user if not found
+            user = new User({
+                email,
+                name: decodedToken.name,
+                password: randomPassword,
+                firebaseUid,
+                phoneNo: 'defaultPhoneNo', // Replace with actual phone number input
+                address: 'defaultAddress', // Replace with actual address input
+                isVerified: true,
+            });
+            await user.save();
+        }
+
+        generateTokenAndSetCookie(res, user._id);
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            user: {
+                ...user._doc,
+                password: undefined,
+            },
+        });
+    } catch (error) {
+        console.error("Error verifying Google ID token:", error);
+        res.status(400).json({ success: false, message: "Invalid Google ID token" });
+    }
+};
 
 export const login = async (req, res) => {
     const { email, password } = req.body;
@@ -94,39 +160,6 @@ export const login = async (req, res) => {
       const firebaseUser = await auth.getUserByEmail(email);
       if (!firebaseUser) {
         return res.status(400).json({ success: false, message: "Invalid credentials" });
-      }
-  
-      generateTokenAndSetCookie(res, user._id);
-      await user.save();
-  
-      res.status(200).json({
-        success: true,
-        message: user.isAdmin ? "Logged in successfully as admin" : "Logged in successfully as user",
-        user: {
-          ...user._doc,
-          password: undefined,
-        },
-      });
-    } catch (error) {
-      res.status(400).json({ success: false, message: error.message });
-    }
-  };
-  
-  export const googleLogin = async (req, res) => {
-    const { idToken } = req.body;
-    try {
-      const decodedToken = await auth.verifyIdToken(idToken);
-      const email = decodedToken.email;
-  
-      let user = await User.findOne({ email });
-      if (!user) {
-        // Create a new user if not found
-        user = new User({
-          email,
-          name: decodedToken.name,
-          isVerified: true,
-        });
-        await user.save();
       }
   
       generateTokenAndSetCookie(res, user._id);

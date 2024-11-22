@@ -1,10 +1,16 @@
 import express from "express";
+<<<<<<< Updated upstream
 import { signup, login, googleLogin, logout, verifyEmail, forgotPassword, resetPassword, getUsers, getUserById, addToCart, getCart, updateCartItemQuantity, removeCartItem } from "../controllers/auth.controller.js";
 import { isAuthenticatedUser, authorizeAdmin } from "../middleware/authUsers.js"; // Only use these two now
+=======
+import { signup, login, googleLogin, logout, verifyEmail, forgotPassword, resetPassword, getUsers, getUserById } from "../controllers/auth.controller.js";
+import { isAuthenticatedUser, authorizeAdmin } from "../middleware/authUsers.js";
+import upload from "../utils/multer.js"; // Import the multer configuration
+>>>>>>> Stashed changes
 
 const router = express.Router();
 
-router.post("/signup", signup);
+router.post('/signup', upload.single('profilePicture'), signup);
 router.post("/login", login);
 router.post('/google-login', googleLogin);
 router.post("/logout", logout);

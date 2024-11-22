@@ -35,6 +35,24 @@ const userSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
+        address: {
+            type: String,
+            required: true,
+        },
+        phoneNo: {
+            type: String,
+            required: true,
+        },
+        avatar: {
+            public_id: {
+                type: String,
+                required: false,
+            },
+            url: {
+                type: String,
+                required: false,
+            },
+        },
         cart: [
             {
                 product: {
