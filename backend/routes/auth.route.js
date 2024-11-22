@@ -1,5 +1,5 @@
 import express from "express";
-import { signup, login, googleLogin, logout, verifyEmail, forgotPassword, resetPassword, getUsers, getUserById, addToCart, getCart, updateCartItemQuantity, removeCartItem } from "../controllers/auth.controller.js";
+import { signup, login, googleLogin, logout, verifyEmail, forgotPassword, resetPassword, getUsers, getUserById, addToCart, getCart, updateCartItemQuantity, removeCartItem, updateProfile } from "../controllers/auth.controller.js";
 import { isAuthenticatedUser, authorizeAdmin } from "../middleware/authUsers.js"; // Only use these two now
 import upload from "../utils/multer.js"; // Import the multer configuration
 
@@ -16,6 +16,10 @@ router.post("/reset-password/:token", resetPassword);
 // Updated routes
 router.get("/users", isAuthenticatedUser, authorizeAdmin, getUsers); // Get all users
 router.get("/user/:id", isAuthenticatedUser, getUserById); // Get user by ID
+
+
+//profile
+router.put("/update", upload.single("avatar"), updateProfile);
 
 
 //cart  

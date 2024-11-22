@@ -1,19 +1,38 @@
-import React, { useState } from "react";
-import Header from "./Header"; // Assuming you have a Header component
+import React, { useState, useEffect } from "react";
+import Header from "./Header";
+import axios from "axios";  // Import Axios
 
 const ProfilePage = () => {
   const [user, setUser] = useState({
-    name: "John Doe",
-    email: "johndoe@example.com",
-    phone: "+123456789",
-    address: "123 Main St, Springfield, USA",
-    profilePicture: '/images/signup.jpg',
-    coverPhoto: '/images/welcome1.png',
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    profilePicture: "",
   });
 
   const [editedUser, setEditedUser] = useState({ ...user });
-  const [isEditing, setIsEditing] = useState(false);
   const [showModal, setShowModal] = useState(false);
+
+  useEffect(() => {
+    const storedUserData = JSON.parse(localStorage.getItem("user"));
+    if (storedUserData) {
+      setUser({
+        name: storedUserData.name,
+        email: storedUserData.email,
+        phone: storedUserData.phoneNo,
+        address: storedUserData.address,
+        profilePicture: storedUserData.avatar?.url || "/images/signup.jpg",
+      });
+      setEditedUser({
+        name: storedUserData.name,
+        email: storedUserData.email,
+        phone: storedUserData.phoneNo,
+        address: storedUserData.address,
+        profilePicture: storedUserData.avatar?.url || "/images/signup.jpg",
+      });
+    }
+  }, []);
 
   // Handle input changes
   const handleInputChange = (e) => {
@@ -33,21 +52,38 @@ const ProfilePage = () => {
     }
   };
 
-  // Save changes after confirmation
-  const saveChanges = () => {
-    setUser({ ...editedUser });
-    setIsEditing(false);
-    setShowModal(false);
-    alert("Profile updated successfully!");
+  const saveChanges = async () => {
+    try {
+      // Prepare form data for profile picture upload
+      const formData = new FormData();
+      formData.append("userId", user._id); // Include user ID in the request
+      formData.append("name", editedUser.name);
+      formData.append("email", editedUser.email);
+      formData.append("phone", editedUser.phone);
+      formData.append("address", editedUser.address);
+  
+      if (editedUser.profilePicture.startsWith("data:image")) {
+        formData.append("profilePicture", editedUser.profilePicture);
+      }
+  
+      // Send a PUT request to your backend endpoint
+      const response = await axios.put("http://localhost:5000/api/auth/update", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+  
+      // Update local storage with the new user data
+      localStorage.setItem("user", JSON.stringify(response.data.user));
+      setUser(response.data.user);
+      setShowModal(false);
+      alert("Profile updated successfully!");
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      alert("Failed to update profile. Please try again.");
+    }
   };
-
-  // Cancel changes
-  const cancelChanges = () => {
-    setEditedUser({ ...user });
-    setIsEditing(false);
-    setShowModal(false);
-  };
-
+  
   return (
     <div className="bg-stone-300 min-h-screen">
       <Header />
@@ -56,7 +92,7 @@ const ProfilePage = () => {
       <div className="relative w-full h-80 mb-8">
         <div className="absolute inset-0">
           <img
-            src={editedUser.coverPhoto}
+            src={"/images/welcome1.png"}
             alt="Cover"
             className="w-full h-full object-cover"
           />
@@ -64,17 +100,17 @@ const ProfilePage = () => {
         
         {/* Profile Picture Overlay */}
         <div className="absolute left-8 top-48 w-44 h-44 bg-gray-300 rounded-full overflow-hidden border-4 border-white">
-            {editedUser.profilePicture ? (
-                <img
-                src={editedUser.profilePicture}
-                alt="Profile"
-                className="w-full h-full object-cover"
-                />
-            ) : (
-                <span className="text-3xl font-bold text-slate-700">
-                {user.name.charAt(0)}
-                </span>
-            )}
+          {editedUser.profilePicture ? (
+            <img
+              src={editedUser.profilePicture}
+              alt="Profile"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <span className="text-3xl font-bold text-slate-700">
+              {user.name.charAt(0)}
+            </span>
+          )}
         </div>
       </div>
 
@@ -89,7 +125,7 @@ const ProfilePage = () => {
             </div>
 
             {/* Update Profile Picture Button */}
-            <div className="mr-[588px] ">
+            <div className="mr-[588px]">
               <label
                 htmlFor="profilePicture"
                 className="block text-gray-700 font-semibold mb-2"
@@ -201,7 +237,7 @@ const ProfilePage = () => {
             <p className="mb-6">Do you really want to update your profile info?</p>
             <div className="flex justify-end space-x-4">
               <button
-                onClick={cancelChanges}
+                onClick={() => setShowModal(false)}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-800 transition"
               >
                 Cancel
