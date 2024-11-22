@@ -20,6 +20,7 @@ import ProfilePage from './pages/homePages/profile';
 import CheckoutPage from './pages/homePages/checkout';
 import { checkAuthStatus, handleLogout } from './components/authUtils';
 import UserPage from './pages/admin-pages/UserPage';
+import OrderList from './pages/admin-pages/ordersList';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => checkAuthStatus());
@@ -62,6 +63,7 @@ function App() {
           <Route path="/admin/dashboard" element={<PrivateRoute element={<Dashboard />} isAuthenticated={isAuthenticated} isAdmin={isAdmin} adminOnly={true} />} />
           <Route path="/admin/products" element={<PrivateRoute element={<ProductList />} isAuthenticated={isAuthenticated} isAdmin={isAdmin} adminOnly={true} />} />
           <Route path="/admin/users" element={<PrivateRoute element={<UserPage />} isAuthenticated={isAuthenticated} isAdmin={isAdmin} adminOnly={true} />} />
+          <Route path="/admin/orders" element={<PrivateRoute element={<OrderList />} isAuthenticated={isAuthenticated} isAdmin={isAdmin} adminOnly={true} />} />
           <Route path="/index" element={<IndexPage />} />
           <Route path="/products" element={<ProductPage />} />
           <Route path="/cart" element={<PrivateRoute element={<CartPage />} isAuthenticated={isAuthenticated} />} />
