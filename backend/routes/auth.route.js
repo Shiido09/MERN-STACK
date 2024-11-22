@@ -19,7 +19,7 @@ router.get("/user/:id", isAuthenticatedUser, getUserById); // Get user by ID
 
 
 //profile
-router.put("/update", upload.single("avatar"), updateProfile);
+router.put("/update", upload.single("profilePicture"), updateProfile);
 
 
 //cart  

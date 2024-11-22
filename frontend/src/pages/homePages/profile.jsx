@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import Header from "./Header";
-import axios from "axios";  // Import Axios
+import axios from "axios";
 
 const ProfilePage = () => {
   const [user, setUser] = useState({
+    userId: "", // Include userId field
     name: "",
     email: "",
     phone: "",
@@ -15,15 +16,19 @@ const ProfilePage = () => {
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
+    // Retrieve user data from localStorage
     const storedUserData = JSON.parse(localStorage.getItem("user"));
     if (storedUserData) {
       setUser({
+        userId: storedUserData._id, // Access _id from storedUserData
         name: storedUserData.name,
         email: storedUserData.email,
         phone: storedUserData.phoneNo,
         address: storedUserData.address,
         profilePicture: storedUserData.avatar?.url || "/images/signup.jpg",
       });
+
+      // Initialize editedUser with user data
       setEditedUser({
         name: storedUserData.name,
         email: storedUserData.email,
@@ -54,28 +59,33 @@ const ProfilePage = () => {
 
   const saveChanges = async () => {
     try {
-      // Prepare form data for profile picture upload
       const formData = new FormData();
-      formData.append("userId", user._id); // Include user ID in the request
+
+      // Include userId in the form data
+      formData.append("userId", user.userId); // Use user.userId instead of user._id
       formData.append("name", editedUser.name);
       formData.append("email", editedUser.email);
       formData.append("phone", editedUser.phone);
       formData.append("address", editedUser.address);
-  
+
       if (editedUser.profilePicture.startsWith("data:image")) {
+        console.log("Base64 image data:", editedUser.profilePicture);
         formData.append("profilePicture", editedUser.profilePicture);
       }
-  
-      // Send a PUT request to your backend endpoint
-      const response = await axios.put("http://localhost:5000/api/auth/update", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-  
-      // Update local storage with the new user data
+
+      const response = await axios.put(
+        "http://localhost:5000/api/auth/update",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      // Update localStorage with the new user data
       localStorage.setItem("user", JSON.stringify(response.data.user));
-      setUser(response.data.user);
+      setUser(response.data.user); // Update user state with response
       setShowModal(false);
       alert("Profile updated successfully!");
     } catch (error) {
@@ -83,11 +93,11 @@ const ProfilePage = () => {
       alert("Failed to update profile. Please try again.");
     }
   };
-  
+
   return (
     <div className="bg-stone-300 min-h-screen">
       <Header />
-      
+
       {/* Cover Photo Section */}
       <div className="relative w-full h-80 mb-8">
         <div className="absolute inset-0">
@@ -97,7 +107,7 @@ const ProfilePage = () => {
             className="w-full h-full object-cover"
           />
         </div>
-        
+
         {/* Profile Picture Overlay */}
         <div className="absolute left-8 top-48 w-44 h-44 bg-gray-300 rounded-full overflow-hidden border-4 border-white">
           {editedUser.profilePicture ? (
