@@ -437,73 +437,133 @@ export const removeCartItem = async (req, res) => {
 
 
 
-// Profile
+// // Profile
+// export const updateProfile = async (req, res) => {
+//     const { userId, name, email, phoneNo, address } = req.body;
+//     const avatar = req.file;
+
+//     if (!userId) {
+//       return res.status(400).json({ success: false, message: "User ID is required" });
+//     }
+
+//     try {
+//       // Fetch user from the database
+//       const user = await User.findById(userId);
+//       if (!user) {
+//         return res.status(404).json({ success: false, message: "User not found" });
+//       }
+
+//       // Update basic user information
+//       user.name = name || user.name;
+//       user.email = email || user.email;
+//       user.phoneNo = phoneNo || user.phoneNo;
+//       user.address = address || user.address;
+
+//       if (avatar) {
+//         // Delete the old avatar from Cloudinary if exists
+//         if (user.avatar?.public_id) {
+//           await cloudinary.uploader.destroy(user.avatar.public_id);
+//         }
+
+//         // Upload new avatar to Cloudinary
+//         const uploadResult = await new Promise((resolve, reject) => {
+//           const stream = cloudinary.uploader.upload_stream(
+//             { folder: "user_avatars" },
+//             (error, result) => {
+//               if (error) {
+//                 reject(new Error("Error uploading avatar to Cloudinary"));
+//               } else {
+//                 resolve(result);
+//               }
+//             }
+//           );
+//           stream.end(avatar.buffer); // Make sure the file is streamed
+//         });
+
+//         // Update user's avatar with new data from Cloudinary
+//         user.avatar = {
+//           public_id: uploadResult.public_id,
+//           url: uploadResult.secure_url,
+//         };
+//       }
+
+//       // Save updated user data
+//       await user.save();
+
+//       // Send successful response
+//       res.status(200).json({
+//         success: true,
+//         message: "Profile updated successfully",
+//         user: {
+//           ...user._doc,
+//           password: undefined, // Exclude password from response
+//         },
+//       });
+//     } catch (error) {
+//       console.error("Error updating profile:", error);
+//       res.status(500).json({ success: false, message: "An error occurred. Please try again." });
+//     }
+
+// };
+
+
 export const updateProfile = async (req, res) => {
-    const { userId, name, email, phoneNo, address } = req.body;
-    const avatar = req.file;
+  const { userId, name, email, phoneNo, address } = req.body;
+  const avatar = req.file;
 
-    if (!userId) {
-      return res.status(400).json({ success: false, message: "User ID is required" });
+  if (!userId) {
+    return res.status(400).json({ success: false, message: "User ID is required" });
+  }
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    try {
-      // Fetch user from the database
-      const user = await User.findById(userId);
-      if (!user) {
-        return res.status(404).json({ success: false, message: "User not found" });
+    user.name = name || user.name;
+    user.email = email || user.email;
+    user.phoneNo = phoneNo || user.phoneNo;
+    user.address = address || user.address;
+
+    if (avatar) {
+      if (user.avatar?.public_id) {
+        await cloudinary.uploader.destroy(user.avatar.public_id);
       }
-
-      // Update basic user information
-      user.name = name || user.name;
-      user.email = email || user.email;
-      user.phoneNo = phoneNo || user.phoneNo;
-      user.address = address || user.address;
-
-      if (avatar) {
-        // Delete the old avatar from Cloudinary if exists
-        if (user.avatar?.public_id) {
-          await cloudinary.uploader.destroy(user.avatar.public_id);
-        }
-
-        // Upload new avatar to Cloudinary
-        const uploadResult = await new Promise((resolve, reject) => {
-          const stream = cloudinary.uploader.upload_stream(
-            { folder: "user_avatars" },
-            (error, result) => {
-              if (error) {
-                reject(new Error("Error uploading avatar to Cloudinary"));
-              } else {
-                resolve(result);
-              }
+      const uploadResult = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: "user_avatars" },
+          (error, result) => {
+            if (error) {
+              reject(new Error("Error uploading avatar to Cloudinary"));
+            } else {
+              resolve(result);
             }
-          );
-          stream.end(avatar.buffer); // Make sure the file is streamed
-        });
-
-        // Update user's avatar with new data from Cloudinary
-        user.avatar = {
-          public_id: uploadResult.public_id,
-          url: uploadResult.secure_url,
-        };
-      }
-
-      // Save updated user data
-      await user.save();
-
-      // Send successful response
-      res.status(200).json({
-        success: true,
-        message: "Profile updated successfully",
-        user: {
-          ...user._doc,
-          password: undefined, // Exclude password from response
-        },
+          }
+        );
+        stream.end(avatar.buffer);
       });
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      res.status(500).json({ success: false, message: "An error occurred. Please try again." });
+
+      user.avatar = {
+        public_id: uploadResult.public_id,
+        url: uploadResult.secure_url,
+      };
     }
 
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      user: {
+        ...user._doc,
+        password: undefined,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    res.status(500).json({ success: false, message: "An error occurred. Please try again." });
+  }
 };
 
 
