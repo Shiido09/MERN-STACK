@@ -65,7 +65,7 @@ export const placeOrder = async (req, res) => {
         await product.save();  // Save the updated product stock
       } else {
         return res.status(400).json({
-          message: `Not enough stock for product: ${product.product_name}`,
+          message: `Not enough stock for product: ${product.name}`,
         });
       }
     }
@@ -85,4 +85,20 @@ export const placeOrder = async (req, res) => {
     console.error('Error placing order:', error);
     res.status(500).json({ message: 'Error placing the order. Please try again.' });
   }
+};
+
+
+
+
+export const getUserOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({ user: req.user._id }).populate(
+      "orderItems.product",
+      "product_name price"
+    ); // Populates product details if needed
+    res.status(200).json(orders);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch orders", error: error.message });
+  }
+
 };
