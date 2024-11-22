@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import Header from './Header'; 
+import Header from './Header';
 import { FaTrashAlt } from 'react-icons/fa';
 import { FiArrowRight } from 'react-icons/fi';
-import { FaExclamationTriangle } from 'react-icons/fa'; // Import the warning icon
+import { FaExclamationTriangle } from 'react-icons/fa';
 import axios from 'axios';
-import { ToastContainer, toast } from 'react-toastify'; // Import Toastify
-import 'react-toastify/dist/ReactToastify.css'; // Import Toastify styles
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const CartPage = () => {
   const [cart, setCart] = useState([]);
@@ -14,8 +14,8 @@ const CartPage = () => {
   const [error, setError] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [itemToRemove, setItemToRemove] = useState(null);
-  const [selectedItems, setSelectedItems] = useState([]); // State to track selected items
-  const [selectAll, setSelectAll] = useState(false); // State to track "Select All" checkbox
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [selectAll, setSelectAll] = useState(false);
 
   useEffect(() => {
     const fetchCart = async () => {
@@ -60,9 +60,7 @@ const CartPage = () => {
       await axios.delete(`http://localhost:5000/api/auth/${user._id}/cart/${id}`);
       const updatedCart = await axios.get(`http://localhost:5000/api/auth/${user._id}/cart`);
       setCart(updatedCart.data);
-      setModalVisible(false); // Close the modal after successful removal
-
-      // Show success toast after item is removed
+      setModalVisible(false);
       toast.success('Item removed successfully!');
     } catch (err) {
       setError(err.message || 'Failed to remove item.');
@@ -90,21 +88,43 @@ const CartPage = () => {
 
   const handleSelectAll = () => {
     if (selectAll) {
-      setSelectedItems([]); // Deselect all
+      setSelectedItems([]);
     } else {
-      setSelectedItems(cart.map((item) => item.product._id)); // Select all
+      setSelectedItems(cart.map((item) => item.product._id));
     }
-    setSelectAll(!selectAll); // Toggle the Select All checkbox
+    setSelectAll(!selectAll);
   };
 
   const showModal = (id) => {
-    setItemToRemove(id); // Set the item that will be removed
-    setModalVisible(true); // Show the modal
+    setItemToRemove(id);
+    setModalVisible(true);
   };
 
   const hideModal = () => {
-    setModalVisible(false); // Hide the modal
-    setItemToRemove(null); // Clear the item to remove
+    setModalVisible(false);
+    setItemToRemove(null);
+  };
+
+  const storeSelectedItems = () => {
+    const selectedProducts = cart
+      .filter((item) => selectedItems.includes(item.product._id))
+      .map((item) => ({
+        _id: item.product._id,
+        product_name: item.product.product_name,
+        price: item.product.price,
+        quantity: item.quantity,
+        subtotal: item.product.price * item.quantity,
+      }));
+
+    const total = calculateTotal();
+
+    const checkoutData = {
+      products: selectedProducts,
+      total,
+    };
+
+    localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
+    toast.success('Checkout data saved successfully!');
   };
 
   if (loading) return <div>Loading...</div>;
@@ -137,7 +157,7 @@ const CartPage = () => {
             {cart.length === 0 ? (
               <p className="text-lg text-gray-500">Your cart is empty.</p>
             ) : (
-              cart.map((item, index) => (
+              cart.map((item) => (
                 <div key={item.product._id}>
                   <div className="flex items-center justify-between bg-white shadow-lg p-6 rounded-lg">
                     <div className="flex items-center space-x-6">
@@ -201,7 +221,6 @@ const CartPage = () => {
                       </button>
                     </div>
                   </div>
-                  {index < cart.length - 1 && <div className="border-t my-4"></div>}
                 </div>
               ))
             )}
@@ -216,6 +235,7 @@ const CartPage = () => {
             </div>
             <Link
               to="/checkout"
+              onClick={storeSelectedItems}
               className="w-full mt-8 px-6 py-3 bg-slate-900 text-white font-semibold rounded-lg hover:bg-primary-dark transition text-center block"
             >
               <span className="ml-16 flex items-center space-x-2">
@@ -230,17 +250,13 @@ const CartPage = () => {
         </div>
       </div>
 
-      {/* Confirmation Modal */}
       {modalVisible && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-1/3">
             <h3 className="text-lg font-semibold text-center mb-4">Are you sure you want to remove this item from your cart?</h3>
-
-            {/* Centered Warning Icon below the question */}
             <div className="flex justify-center mb-4">
               <FaExclamationTriangle className="text-red-500 text-7xl" />
             </div>
-
             <div className="mt-4 flex justify-end space-x-4">
               <button
                 onClick={() => {
@@ -261,7 +277,6 @@ const CartPage = () => {
         </div>
       )}
 
-      {/* Toast Container */}
       <ToastContainer />
     </div>
   );

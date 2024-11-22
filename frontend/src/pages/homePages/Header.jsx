@@ -30,7 +30,7 @@ const Header = ({ setIsAuthenticated, setUser, setIsAdmin }) => {
           <nav className="space-x-6">
             <Link to="/index" className="text-white hover:text-gray-300">Home</Link>
             <Link to="/products" className="text-white hover:text-gray-300">Products</Link>
-            <Link to="/checkout" className="text-white hover:text-gray-300">Checkout</Link> {/* nilagay q kase hindi q maview */}
+             {/*<Link to="/checkout" className="text-white hover:text-gray-300">Checkout</Link>  nilagay q kase hindi q maview */}
             {isAuthenticated ? (
               <>
                 <Link to="/cart" className="text-white hover:text-gray-300">

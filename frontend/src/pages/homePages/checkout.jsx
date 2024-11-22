@@ -1,61 +1,62 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import Header from './Header'; 
-import { FiArrowRight } from 'react-icons/fi';
+import React, { useEffect, useState } from 'react';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
-import { ToastContainer, toast } from 'react-toastify'; // Import Toastify
-import 'react-toastify/dist/ReactToastify.css'; // Import Toastify styles
+import Header from './Header';
+import { useNavigate } from 'react-router-dom';
 
 const CheckoutPage = () => {
-  const [cart, setCart] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [address, setAddress] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("Credit Card");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [email, setEmail] = useState(""); // New email state
+  const [products, setProducts] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [address, setAddress] = useState('');
+  const [shippingMethod, setShippingMethod] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('Credit Card');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [email, setEmail] = useState('');
   const [shippingCost, setShippingCost] = useState(0);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate(); // Initialize the navigation function
 
+  // Fetch checkoutData from localStorage
   useEffect(() => {
-    const fetchCart = async () => {
-      try {
-        const user = JSON.parse(localStorage.getItem('user'));
-        if (!user || !user._id) {
-          setError('User not found in local storage.');
-          return;
-        }
-
-        const response = await axios.get(`http://localhost:5000/api/auth/${user._id}/cart`);
-        setCart(response.data);
-      } catch (err) {
-        setError(err.message || 'Failed to fetch cart data.');
-      } finally {
-        setLoading(false);
+    try {
+      const checkoutData = JSON.parse(localStorage.getItem('checkoutData'));
+      if (!checkoutData || !checkoutData.products) {
+        setError('Checkout data not found in local storage.');
+        return;
       }
-    };
 
-    fetchCart();
+      setProducts(checkoutData.products);
+      setTotal(checkoutData.total);
+    } catch (err) {
+      setError('Failed to load checkout data from local storage.');
+    }
+
+    // Fetch the user's phone number and address from localStorage if available
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user) {
+      setPhoneNumber(user.phoneNo || '');
+      setAddress(user.address || '');
+    }
   }, []);
 
-  const calculateTotal = () => {
-    return cart.reduce((total, item) => {
-      const price = item.product.price || 0;
-      const quantity = item.quantity || 0;
-      return total + price * quantity;
-    }, 0);
-  };
-
   const handleShippingChange = (e) => {
-    const selectedAddress = e.target.value;
-    setAddress(selectedAddress);
+    const selectedShipping = e.target.value;
+    setShippingMethod(selectedShipping);
 
-    // Example shipping cost logic based on address
-    switch (selectedAddress) {
+    // Set shipping cost based on selection
+    switch (selectedShipping) {
       case 'Standard Shipping':
         setShippingCost(5);
         break;
       case 'Express Shipping':
         setShippingCost(15);
+        break;
+      case 'Same-Day Delivery':
+        setShippingCost(25);
+        break;
+      case 'Pickup':
+        setShippingCost(0);
         break;
       default:
         setShippingCost(0);
@@ -65,33 +66,55 @@ const CheckoutPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!address || !paymentMethod || !phoneNumber || !email) {
+    if (!address || !paymentMethod || !phoneNumber || !shippingMethod) { // Check if shipping method is selected
       toast.error('Please fill in all the fields.');
       return;
     }
-    
+
     try {
-      // Make a request to create an order (or complete checkout)
       const user = JSON.parse(localStorage.getItem('user'));
+
       const orderData = {
-        userId: user._id,
-        items: cart,
-        total: calculateTotal() + shippingCost,
-        address,
-        paymentMethod,
-        phoneNumber,
-        email // Include email in order data
+        userId: user._id,  // Add userId here from localStorage
+        orderItems: products.map((item) => ({
+          quantity: item.quantity,
+          product: item._id, // Assuming 'product_id' is the ID of the product
+        })),
+        shippingInfo: {
+          address,
+          phoneNo: phoneNumber,
+        },
+        paymentInfo: {
+          id: 'payment-id', // Replace with the actual payment ID (e.g., from Stripe)
+          status: 'success', // Replace with actual payment status
+        },
+        shippingMethod,  // Include the shipping method here
+        shippingPrice: shippingCost,
+        totalPrice: total + shippingCost,
       };
-      const response = await axios.post(`http://localhost:5000/api/orders`, orderData);
-      
-      toast.success('Checkout successful!');
-      // Redirect to order confirmation page or reset cart
+
+      // Log the order data to verify if userId is being added
+      console.log(orderData);
+
+      // Send order data to backend API
+      const response = await axios.post('http://localhost:5000/api/orders/placeOrder', orderData);
+
+      // Handle successful order placement
+      if (response.status === 201) {
+        toast.success('Checkout successful!');
+        
+        // Optionally, clear the checkoutData from localStorage
+        localStorage.removeItem('checkoutData');
+
+        // Redirect to the products page after checkout
+        navigate('/products');
+      }
     } catch (err) {
-      setError(err.message || 'Failed to complete checkout.');
+      setError('Failed to complete checkout.');
+      toast.error('Something went wrong with your order.');
     }
   };
 
-  if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
 
   return (
@@ -100,40 +123,46 @@ const CheckoutPage = () => {
       <div className="container mx-auto p-8 mt-16 flex flex-col lg:flex-row space-x-0 lg:space-x-8">
         <div className="flex-1">
           <h1 className="text-3xl font-bold mb-6 text-primary">Checkout</h1>
-          
+
           <div className="bg-white shadow-lg p-6 rounded-lg mb-6">
             <h2 className="text-xl font-semibold text-primary">Cart Summary</h2>
             <div className="mt-4 space-y-4">
-              {cart.map((item) => (
-                <div key={item.product._id} className="flex justify-between text-lg">
-                  <span>{item.product.name}</span>
-                  <span>£{(item.product.price * item.quantity).toFixed(2)}</span>
+              {products.map((item, index) => (
+                <div key={index} className="flex justify-between text-lg">
+                  <span>{item.product_name}</span>
+                  <span>£{item.subtotal.toFixed(2)} ({item.quantity} x £{item.price.toFixed(2)})</span>
                 </div>
               ))}
             </div>
             <div className="mt-4 flex justify-between text-lg font-semibold">
-              <span>Total:</span>
-              <span>£{calculateTotal().toFixed(2)}</span>
+              <span>Subtotal:</span>
+              <span>£{total.toFixed(2)}</span>
             </div>
           </div>
-          
+
           <form onSubmit={handleSubmit} className="bg-white shadow-lg p-6 rounded-lg">
             <div className="mb-4">
-              <label htmlFor="address" className="block text-lg font-semibold text-primary">Shipping Address</label>
+              <label htmlFor="shippingMethod" className="block text-lg font-semibold text-primary">
+                Shipping Option
+              </label>
               <select
-                id="address"
+                id="shippingMethod"
                 className="w-full mt-2 p-2 border rounded-lg"
-                value={address}
+                value={shippingMethod}
                 onChange={handleShippingChange}
               >
                 <option value="">Select Shipping Option</option>
                 <option value="Standard Shipping">Standard Shipping - £5</option>
                 <option value="Express Shipping">Express Shipping - £15</option>
+                <option value="Same-Day Delivery">Same-Day Delivery - £25</option>
+                <option value="Pickup">Pickup - Free</option>
               </select>
             </div>
 
             <div className="mb-4">
-              <label htmlFor="paymentMethod" className="block text-lg font-semibold text-primary">Payment Method</label>
+              <label htmlFor="paymentMethod" className="block text-lg font-semibold text-primary">
+                Payment Method
+              </label>
               <select
                 id="paymentMethod"
                 className="w-full mt-2 p-2 border rounded-lg"
@@ -143,14 +172,18 @@ const CheckoutPage = () => {
                 <option value="Credit Card">Credit Card</option>
                 <option value="PayPal">PayPal</option>
                 <option value="Bank Transfer">Bank Transfer</option>
+                <option value="Cash on Delivery">Cash on Delivery</option>
+                <option value="Apple Pay">Apple Pay</option>
               </select>
             </div>
 
             <div className="mb-4">
-              <label htmlFor="phoneNumber" className="block text-lg font-semibold text-primary">Phone Number</label>
+              <label htmlFor="phoneNo" className="block text-lg font-semibold text-primary">
+                Phone Number
+              </label>
               <input
                 type="text"
-                id="phoneNumber"
+                id="phoneNo"
                 className="w-full mt-2 p-2 border rounded-lg"
                 placeholder="Enter your phone number"
                 value={phoneNumber}
@@ -159,32 +192,34 @@ const CheckoutPage = () => {
             </div>
 
             <div className="mb-4">
-              <label htmlFor="email" className="block text-lg font-semibold text-primary">Email Address</label>
+              <label htmlFor="address" className="block text-lg font-semibold text-primary">
+                Address
+              </label>
               <input
-                type="email"
-                id="email"
+                type="text"
+                id="address"
                 className="w-full mt-2 p-2 border rounded-lg"
-                placeholder="Enter your email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter the destination address"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}  // Update address state here
               />
             </div>
 
+            <button
+              type="submit"
+              className="w-full px-6 py-3 bg-slate-900 text-white font-semibold rounded-lg hover:bg-primary-dark transition text-center"
+            >
+              Complete Checkout
+            </button>
           </form>
         </div>
 
-        <div className="w-full lg:w-1/3  space-y-6 mt-6 lg:mt-0">
-          <div className="mt-12 bg-stone-100 p-6 rounded-lg shadow-lg">
+        <div className="w-full lg:w-1/3 space-y-6 mt-6 lg:mt-0">
+          <div className="bg-stone-100 p-6 rounded-lg shadow-lg">
             <h2 className="text-xl font-semibold text-primary">Order Summary</h2>
-            <div className="mt-4">
-              <ul>
-                {cart.map((item) => (
-                  <li key={item.product._id} className="flex justify-between text-lg">
-                    <span>{item.product.name}</span>
-                    <span>£{(item.product.price * item.quantity).toFixed(2)}</span>
-                  </li>
-                ))}
-              </ul>
+            <div className="mt-4 flex justify-between text-lg font-semibold">
+              <span>Subtotal:</span>
+              <span>£{total.toFixed(2)}</span>
             </div>
             <div className="mt-4 flex justify-between text-lg font-semibold">
               <span>Shipping:</span>
@@ -192,22 +227,12 @@ const CheckoutPage = () => {
             </div>
             <div className="mt-4 flex justify-between text-lg font-semibold">
               <span>Total:</span>
-              <span>£{(calculateTotal() + shippingCost).toFixed(2)}</span>
-            </div>
-            
-            <div className="mt-8">
-              <button 
-                type="submit"
-                className="w-full px-6 py-3 bg-slate-900 text-white font-semibold rounded-lg hover:bg-primary-dark transition text-center"
-              >
-                Complete Checkout
-              </button>
+              <span>£{(total + shippingCost).toFixed(2)}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Toast Container */}
       <ToastContainer />
     </div>
   );
