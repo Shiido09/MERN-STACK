@@ -18,7 +18,10 @@ const ProductForm = ({ onSubmit, product }) => {
     price: Yup.number().typeError('Price must be a number').required('Price is required'),
     stocks: Yup.number().typeError('Stocks must be a number').required('Stocks are required'),
     category: Yup.string().required('Category is required'),
-    images: Yup.array().min(1, 'At least one image is required')
+    explanation: Yup.string().required('Explanation is required'),
+    images: product
+    ? Yup.array() 
+    : Yup.array().min(1, 'At least one image is required') 
   });
 
   const formik = useFormik({
@@ -27,6 +30,7 @@ const ProductForm = ({ onSubmit, product }) => {
       price: product ? product.price : '',
       stocks: product ? product.stocks : '',
       category: product ? product.category : '',
+      explanation: product ? product.explanation : '',
       images: []
     },
     validationSchema,
@@ -127,6 +131,19 @@ const ProductForm = ({ onSubmit, product }) => {
               <Typography variant="caption" color="error">{formik.errors.category}</Typography>
             )}
           </FormControl>
+          <TextField
+            label="Explanation"
+            name="explanation"
+            value={formik.values.explanation}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            fullWidth
+            margin="normal"
+            multiline
+            rows={4}
+            error={formik.touched.explanation && Boolean(formik.errors.explanation)}
+            helperText={formik.touched.explanation && formik.errors.explanation}
+          />
           <Box sx={{ display: 'flex', flexWrap: 'wrap', mt: 2 }}>
             {existingImages.map((image, index) => (
               <Box key={index} sx={{ position: 'relative', m: 1 }}>
