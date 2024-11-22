@@ -136,44 +136,14 @@ export const deleteProduct = async (req, res, next) => {
     });
   } catch (error) {
     console.error("Error deleting product:", error);
-    next(new ErrorHandler("Error deleting product", 500));
+    next(new ErrorHandler("Error deleting product", 500));d
   }
 };
 
 // READ all products
-
 export const getAllProducts = async (req, res, next) => {
   try {
-    const { categories, priceRange, searchQuery } = req.query;
-
-    let filters = {};
-
-    // Filter by category
-    if (categories) {
-      filters.category = { $in: categories.split(',') }; // Assume categories are passed as a comma-separated string
-    }
-
-    // Filter by price range
-    if (priceRange) {
-      if (priceRange === 'Under $5000') {
-        filters.price = { $lt: 5000 };
-      } else if (priceRange === '$5000 - $10000') {
-        filters.price = { $gte: 5000, $lte: 10000 };
-      } else if (priceRange === 'Above $10000') {
-        filters.price = { $gt: 10000 };
-      }
-    }
-
-    // Filter by search query (product name or description)
-    if (searchQuery) {
-      filters.$or = [
-        { product_name: { $regex: searchQuery, $options: 'i' } },  // Case insensitive search
-        { explanation: { $regex: searchQuery, $options: 'i' } }
-      ];
-    }
-
-    // Fetch filtered products
-    const products = await Product.find(filters);
+    const products = await Product.find();
 
     res.status(200).json({
       success: true,
@@ -185,6 +155,51 @@ export const getAllProducts = async (req, res, next) => {
     next(new ErrorHandler("Error fetching products", 500));
   }
 };
+
+
+// product.controller.js
+
+export const filterProduct = async (req, res) => {
+  const { categories, priceRange, searchQuery } = req.query;
+
+  let filters = {};
+
+  // Logging the query parameters to check them
+  console.log('Request filters:', { categories, priceRange, searchQuery });
+
+  if (categories) {
+    filters.category = { $in: categories.split(',') };
+  }
+
+  if (priceRange) {
+    const priceRanges = priceRange.split(',');
+    filters.price = {
+      $gte: parseInt(priceRanges[0].replace('$', '').replace('Under ', '').replace('Above ', '').trim()),
+      $lte: parseInt(priceRanges[1]?.replace('$', '').trim()) || Infinity,
+    };
+  }
+
+  if (searchQuery) {
+    filters.product_name = { $regex: searchQuery, $options: 'i' };
+  }
+
+  // Log the filters object before querying the database
+  console.log('Applied filters:', filters);
+
+  try {
+    const products = await Product.find(filters);
+
+    // Log the resulting products
+    console.log('Filtered products:', products);
+
+    res.json({ products });
+  } catch (error) {
+    console.error('Error fetching products:', error.message);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
 
 // READ a single product by ID
 export const getProductById = async (req, res, next) => {

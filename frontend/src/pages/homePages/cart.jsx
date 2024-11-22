@@ -158,7 +158,7 @@ const CartPage = () => {
                         <h2 className="text-xl font-semibold text-primary">
                           {item.product.name || item.product.product_name}
                         </h2>
-                        <p className="text-gray-600">Price: £{item.product.price}</p>
+                        <p className="text-gray-600">Price: ${item.product.price}</p>
                         <p className="text-gray-500">Product Name: {item.product.product_name}</p>
                       </div>
                     </div>
@@ -191,7 +191,7 @@ const CartPage = () => {
                         </button>
                       </div>
                       <p className="text-lg font-semibold text-primary">
-                        £{(item.product.price * item.quantity).toFixed(2)}
+                        ${(item.product.price * item.quantity).toFixed(2)}
                       </p>
                       <button
                         onClick={() => showModal(item.product._id)}
@@ -212,7 +212,7 @@ const CartPage = () => {
             <h2 className="text-xl font-semibold text-primary">Cart Summary</h2>
             <div className="mt-4 flex justify-between text-lg font-semibold">
               <span>Total:</span>
-              <span>£{calculateTotal().toFixed(2)}</span>
+              <span>${calculateTotal().toFixed(2)}</span>
             </div>
             <Link
               to="/checkout"

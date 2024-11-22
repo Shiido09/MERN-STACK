@@ -16,9 +16,9 @@ router.post("/reset-password/:token", resetPassword);
 // Updated routes
 router.get("/users", isAuthenticatedUser, authorizeAdmin, getUsers); // Get all users
 router.get("/user/:id", isAuthenticatedUser, getUserById); // Get user by ID
-router.post("/signup", signup);
 
-//cart
+
+//cart  
 router.post('/add', addToCart);
 router.get('/:userId/cart', getCart);
 router.put('/:userId/cart/:productId', updateCartItemQuantity);

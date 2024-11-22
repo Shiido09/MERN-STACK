@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchProducts } from '../../slices/productSlice';
+import { filterProduct } from '../../slices/productSlice';
 import Header from './Header'; // Assuming you have a Header component
 import { FaTimes, FaArrowLeft, FaArrowRight, FaCartPlus, FaInfoCircle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
@@ -23,7 +23,8 @@ const ProductPage = () => {
   useEffect(() => {
     // Fetch products with filters when component mounts or filters change
     if (filters) {
-      dispatch(fetchProducts({ filters }));
+      
+      dispatch(filterProduct({ filters }));
     }
   }, [dispatch, filters]);
 
