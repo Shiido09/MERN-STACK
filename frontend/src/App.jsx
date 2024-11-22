@@ -22,9 +22,10 @@ import { checkAuthStatus, handleLogout } from './components/authUtils';
 import UserPage from './pages/admin-pages/UserPage';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => checkAuthStatus());
+  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('user')));
+  const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem('isAdmin') === 'true');
+  const [loading, setLoading] = useState(true);
 
   const handleLogin = (userData) => {
     setIsAuthenticated(true);

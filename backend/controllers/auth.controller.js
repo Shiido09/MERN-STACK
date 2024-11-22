@@ -275,17 +275,26 @@ export const resetPassword = async (req, res) => {
 
 // Get all users
 export const getUsers = async (req, res, next) => {
-    try {
-        const users = await User.find(); // Fetch all users
-        res.status(200).json({
-            success: true,
-            count: users.length, // Count the fetched users
-            users, // Return the list of users
-        });
-    } catch (error) {
-        console.error("Error fetching users:", error);
-        next(new ErrorHandler("Error fetching users", 500)); // Use the ErrorHandler
-    }
+  try {
+      const users = await User.find(); // Fetch all users
+      const usersData = users.map(user => ({
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.isAdmin ? 'Admin' : 'User',
+          address: user.address,
+          phoneNo: user.phoneNo,
+          avatar: user.avatar.url, // Ensure the avatar URL is included
+      }));
+      res.status(200).json({
+          success: true,
+          count: users.length, // Count the fetched users
+          users: usersData, // Return the list of users with avatar URLs
+      });
+  } catch (error) {
+      console.error("Error fetching users:", error);
+      next(new ErrorHandler("Error fetching users", 500)); // Use the ErrorHandler
+  }
 };
 
 // Get user by ID
