@@ -47,7 +47,7 @@ const UserPage = () => {
         customBodyRender: (value) => (
           <img
             src={value}
-            alt="Avatar"
+            alt="No img"
             style={{ width: '50px', height: '50px', borderRadius: '50%' }}
             onError={(e) => e.target.src = 'default-avatar.png'}
           />
