@@ -257,12 +257,17 @@ export const resetPassword = async (req, res) => {
             return res.status(400).json({ success: false, message: "Invalid or expired reset token" });
         }
 
-        // Update password
+        // Update password in MongoDB
         const hashedPassword = await bcryptjs.hash(password, 10);
         user.password = hashedPassword;
         user.resetPasswordToken = undefined;
         user.resetPasswordExpiresAt = undefined;
         await user.save();
+
+        // Update password in Firebase
+        await auth.updateUser(user.firebaseUid, {
+            password: password
+        });
 
         await sendResetSuccessEmail(user.email);
 
