@@ -53,6 +53,10 @@ const userSchema = new mongoose.Schema(
                 required: false,
             },
         },
+        fcmToken: {
+            type: String,
+            required: false,
+        },  
         cart: [
             {
                 product: {

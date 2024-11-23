@@ -2,6 +2,7 @@ import Order from '../models/order.model.js';  // Import the Order model
 import Product from '../models/product.model.js';  // Import the Product model to check product availability
 import { User } from '../models/user.model.js';  // Import the User model to get user details (if needed)
 import { Filter } from 'bad-words';
+import { sendNotification } from '../sendNotification.js'
 import {
   sendOrderConfirmationEmail
 } from "../mailtrap/emails.js";
@@ -314,28 +315,6 @@ export const getAllOrders = async (req, res) => {
   }
 };
 
-export const updateOrderStatus = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { status } = req.body;
-
-    const order = await Order.findById(id);
-    if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
-    }
-
-    order.orderStatus = status;
-    if (status === 'Delivered') {
-      order.deliveredAt = Date.now();
-    }
-    await order.save();
-    res.status(200).json({ success: true, message: 'Order status updated successfully', order });
-  } catch (error) {
-    res.status(500).json({ message: 'Error updating order status', error: error.message });
-  }
-};
-
-
 export const cancelOrder = async (req, res) => {
   const { id } = req.params;
 
@@ -427,5 +406,33 @@ export const getProductsWithReviews = async (req, res) => {
       success: false,
       message: 'Failed to fetch products',
     });
+  }
+};
+export const updateOrderStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const order = await Order.findById(id).populate('user');
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    order.orderStatus = status;
+    if (status === 'Delivered') {
+      order.deliveredAt = Date.now();
+    }
+    await order.save();
+
+    // Send FCM notification
+    if (order.user.fcmToken) {
+      const title = 'Order Status Updated';
+      const body = `Your order status has been updated to ${status}`;
+      await sendNotification(order.user.fcmToken, title, body);
+    }
+
+    res.status(200).json({ success: true, message: 'Order status updated successfully', order });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating order status', error: error.message });
   }
 };

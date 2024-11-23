@@ -9,6 +9,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
+import { requestNotificationPermission } from '../../requestNotificationPermission';
 
 const LoginPage = ({ onLogin }) => {
   const [error, setError] = useState('');
@@ -51,6 +52,10 @@ const LoginPage = ({ onLogin }) => {
           localStorage.setItem('user', JSON.stringify(user));
           localStorage.setItem('isAuthenticated', 'true');
           localStorage.setItem('isAdmin', user.isAdmin.toString());
+
+          // Request notification permission
+          requestNotificationPermission(user._id);
+
           if (user.isAdmin) {
             navigate('/admin/dashboard');
             toast.success('Login successfully!');
@@ -87,6 +92,10 @@ const LoginPage = ({ onLogin }) => {
         localStorage.setItem('user', JSON.stringify(user));
         localStorage.setItem('isAuthenticated', 'true');
         localStorage.setItem('isAdmin', user.isAdmin.toString());
+
+        // Request notification permission
+        requestNotificationPermission(user._id);
+
         if (user.isAdmin) {
           navigate('/admin/dashboard');
           toast.success('Login successfully!');

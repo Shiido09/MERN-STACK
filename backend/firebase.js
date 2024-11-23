@@ -16,6 +16,8 @@ const serviceAccount = {
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
+  messagingSenderId: '731540629953', // Add your messaging sender ID here
 });
 
 export const auth = admin.auth();
+export const messaging = admin.messaging(); // Add this line to initialize messaging
