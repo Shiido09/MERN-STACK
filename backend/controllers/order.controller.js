@@ -206,58 +206,52 @@ export const placeOrder = async (req, res) => {
 };
 
 
-export const getUserOrders = async (req, res) => {
-  try {
-    const orders = await Order.find({ user: req.user._id }).populate(
-      "orderItems.product",
-      "product_name price"
-    ); // Populates product details if needed
-    res.status(200).json(orders);
-  } catch (error) {
-    res.status(500).json({ message: "Failed to fetch orders", error: error.message });
-  }
-
-};
-
-// Controller to get user orders with reviews in products
 // export const getUserOrders = async (req, res) => {
 //   try {
-//     // Fetch orders for the user with populated product details
 //     const orders = await Order.find({ user: req.user._id }).populate(
-//       "orderItems.product", 
-//       "product_name price reviews"
-//     ); // Populate product details if needed
-
-//     // Update orders with review status for each product in order items
-//     const updatedOrders = orders.map(order => {
-//       order.orderItems = order.orderItems.map(item => {
-//         // Check if the user has already reviewed this product in the order
-//         const alreadyReviewed = item.product.reviews.some(review => 
-//           review.user.toString() === req.user._id.toString() && 
-//           review.orderID.toString() === order._id.toString()
-//         );
-
-//         // Add the review status to the item
-//         return {
-//           ...item,
-//           alreadyReviewed: alreadyReviewed, // Add a flag for review status
-//         };
-//       });
-
-//       return order;
-//     });
-
-//     res.status(200).json(updatedOrders); // Return the updated orders
+//       "orderItems.product",
+//       "product_name price"
+//     ); // Populates product details if needed
+//     res.status(200).json(orders);
 //   } catch (error) {
 //     res.status(500).json({ message: "Failed to fetch orders", error: error.message });
 //   }
+
 // };
 
 
+export const getUserOrders = async (req, res) => {
+  try {
+    // Find orders for the user
+    const orders = await Order.find({ user: req.user._id })
+      .populate("orderItems.product", "product_name price reviews") // Populate product details and reviews
+      .exec();
 
+    // Check if the user has reviewed the product in each order
+    const ordersWithReviewStatus = orders.map(order => {
+      order.orderItems = order.orderItems.map(item => {
+        // Check if a review already exists for this product and order
+        const hasReviewed = item.product.reviews.some(
+          (review) =>
+            review.user.toString() === req.user._id.toString() &&
+            review.orderID.toString() === order._id.toString()
+        );
 
+        return {
+          ...item._doc,
+          hasReviewed,  // Add a flag for already reviewed
+        };
+      });
 
+      return order;
+    });
 
+    // Send the orders with the review status
+    res.status(200).json(ordersWithReviewStatus);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch orders", error: error.message });
+  }
+};
 
 
 export const getStats = async (req, res) => {
@@ -411,6 +405,7 @@ export const createReview = async (req, res) => {
     return res.status(500).json({ message: 'Error creating review' });
   }
 };
+
 
 
 export const getProductsWithReviews = async (req, res) => {

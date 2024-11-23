@@ -90,7 +90,7 @@ const OrderPage = () => {
       console.log("User is not authenticated");
       return;
     }
-
+  
     try {
       const response = await axios.post(
         `http://localhost:5000/api/orders/review/${productId}`, // Send productId here
@@ -101,10 +101,15 @@ const OrderPage = () => {
           orderID: selectedOrderId,
         }
       );
-
+  
       if (response.status === 201) {
         console.log("Review submitted successfully");
         toast.success("Review submitted successfully");
+  
+        setTimeout(() => {
+          window.location.reload(); // Refresh the page after 2 seconds
+        }, 1000);
+  
         closeReviewModal();
       }
     } catch (error) {
@@ -112,20 +117,19 @@ const OrderPage = () => {
       toast.error("Failed to submit review");
     }
   };
+  
+
+  
   const hasReviewed = (orderId, productId) => {
     const order = orders.find((o) => o._id === orderId);
     if (!order) return false;
   
-    // Find the product by productId
-    const product = order.orderItems.find((item) => item.product._id === productId)?.product;
-    if (!product || !product.reviews) return false; // Ensure reviews exist
-  
-    // Check if any review matches the orderId and userId
-    const userId = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user'))._id : null;
-    return product.reviews.some(
-      (review) =>
-        review.orderID.toString() === orderId.toString() &&
-        review.user.toString() === userId
+    return order.orderItems.some((item) =>
+      item.product._id === productId && item.product.reviews.some(
+        (review) =>
+          review.orderID.toString() === orderId.toString() &&
+          review.user.toString() === (localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user'))._id : null)
+      )
     );
   };
   
@@ -184,40 +188,31 @@ const OrderPage = () => {
                 <div className="space-y-2">
                 {order.orderItems.map((item, index) => (
   <div key={index} className="mb-4">
-    {/* Check if the order is delivered */}
     {order.orderStatus === "Delivered" ? (
-      // Format for "Delivered" orders
       <div className="flex flex-col space-y-2">
         <div className="flex justify-between items-start">
-          <span className="text-gray-600 text-sm">
-            {item.quantity} × {item.product.product_name}
-          </span>
+          <span className="text-gray-600 text-sm">{item.quantity} × {item.product.product_name}</span>
         </div>
         <div className="flex justify-between items-center">
           <span className="text-gray-800 font-semibold text-lg">
             ${(item.product.price * item.quantity).toFixed(2)}
           </span>
-
-          {/* Check if the user has already reviewed the product for this order */}
           {hasReviewed(order._id, item.product._id) ? (
-            <span className="text-gray-500">Already Reviewed</span>
+            <span className="text-sm text-gray-500">Already Reviewed</span>
           ) : (
             <button
               onClick={() => openReviewModal(order._id, item.product._id)} // Pass both orderId and productId
               className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition ml-4"
             >
               <FaEdit className="mr-2" />
-              Write a Review
+              Write Review
             </button>
           )}
         </div>
       </div>
     ) : (
-      // Format for other order statuses (Processing, Cancelled, etc.)
       <div className="flex justify-between items-center">
-        <span className="text-gray-600">
-          {item.quantity} × {item.product.product_name}
-        </span>
+        <span className="text-gray-600">{item.quantity} × {item.product.product_name}</span>
         <span className="text-gray-800 font-semibold">
           ${(item.product.price * item.quantity).toFixed(2)}
         </span>
