@@ -164,7 +164,7 @@ export const login = async (req, res) => {
   
       generateTokenAndSetCookie(res, user._id);
       await user.save();
-  
+      
       res.status(200).json({
         success: true,
         message: user.isAdmin ? "Logged in successfully as admin" : "Logged in successfully as user",

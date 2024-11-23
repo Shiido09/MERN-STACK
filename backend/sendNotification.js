@@ -1,4 +1,3 @@
-// sendNotification.js
 import { messaging } from './firebase.js';
 
 export const sendNotification = async (token, title, body) => {
