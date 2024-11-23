@@ -219,39 +219,46 @@ export const getUserOrders = async (req, res) => {
 
 };
 
+// Controller to get user orders with reviews in products
 // export const getUserOrders = async (req, res) => {
 //   try {
-//     // Fetch orders and populate product details
-//     const orders = await Order.find({ user: req.user._id })
-//       .populate('orderItems.product', 'product_name price reviews'); // Populating reviews from Product model
+//     // Fetch orders for the user with populated product details
+//     const orders = await Order.find({ user: req.user._id }).populate(
+//       "orderItems.product", 
+//       "product_name price reviews"
+//     ); // Populate product details if needed
 
-//     // Fetch and update each order item with review status
-//     const updatedOrders = await Promise.all(
-//       orders.map(async (order) => {
-//         // Check each item in the order
-//         const updatedItems = await Promise.all(
-//           order.orderItems.map(async (item) => {
-//             // Get the product details with reviews
-//             const product = await Product.findById(item.product._id);
-//             // Check if the user has already reviewed this product
-//             const hasReviewed = product.reviews.some(
-//               (review) => review.user.toString() === req.user._id.toString()
-//             );
-//             return { ...item._doc, hasReviewed }; // Add hasReviewed field to each item
-//           })
+//     // Update orders with review status for each product in order items
+//     const updatedOrders = orders.map(order => {
+//       order.orderItems = order.orderItems.map(item => {
+//         // Check if the user has already reviewed this product in the order
+//         const alreadyReviewed = item.product.reviews.some(review => 
+//           review.user.toString() === req.user._id.toString() && 
+//           review.orderID.toString() === order._id.toString()
 //         );
 
-//         // Return updated order with the items containing the hasReviewed field
-//         return { ...order._doc, orderItems: updatedItems };
-//       })
-//     );
+//         // Add the review status to the item
+//         return {
+//           ...item,
+//           alreadyReviewed: alreadyReviewed, // Add a flag for review status
+//         };
+//       });
 
-//     res.status(200).json(updatedOrders); // Return the updated orders with review status
+//       return order;
+//     });
+
+//     res.status(200).json(updatedOrders); // Return the updated orders
 //   } catch (error) {
-//     console.error('Error fetching orders:', error);
-//     res.status(500).json({ message: 'Failed to fetch orders', error: error.message });
+//     res.status(500).json({ message: "Failed to fetch orders", error: error.message });
 //   }
 // };
+
+
+
+
+
+
+
 
 export const getStats = async (req, res) => {
   try {
@@ -358,13 +365,14 @@ export const cancelOrder = async (req, res) => {
 };
 
 
-// reviews
+
+// // reviews
 export const createReview = async (req, res) => {
-  const { review, rating, userId } = req.body;
+  const { review, rating, userId, orderID } = req.body;  // Include orderID in the body
   const productId = req.params.id;  // Capture productId from the URL parameter
 
-  if (!review || !rating || !userId) {
-    return res.status(400).json({ message: 'All fields are required' });
+  if (!review || !rating || !userId || !orderID) {  // Check if all required fields are provided
+    return res.status(400).json({ message: 'Review, rating, userId, and orderID are required' });
   }
 
   try {
@@ -374,12 +382,14 @@ export const createReview = async (req, res) => {
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
+
     // Create a new instance of the bad-words filter
     const filter = new Filter();
     const cleanReview = filter.clean(review);
 
-    // Create a new review object
+    // Create a new review object including orderID
     const newReview = {
+      orderID,  // Add orderID here
       user: userId,
       rating,
       comment: cleanReview,

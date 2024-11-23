@@ -275,7 +275,7 @@ const handleFilterChange = (type) => (event) => {
         </div>
 
         {/* Product Listing Section */}
-        <div className="w-8/8 mb-12 ml-6" id="product-container" style={{ height: '100vh', overflowY: 'auto' }}>
+        <div className="w-8/8 mb-12 ml-6" id="product-container" style={{ height: '120vh', overflowY: 'auto' }}>
           <h2 className="text-3xl font-semibold mb-4">Products</h2>
 
           {/* Product Cards */}

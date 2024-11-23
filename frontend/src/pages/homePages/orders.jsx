@@ -98,6 +98,7 @@ const OrderPage = () => {
           review: reviewText,
           rating,
           userId,
+          orderID: selectedOrderId,
         }
       );
 
@@ -111,7 +112,23 @@ const OrderPage = () => {
       toast.error("Failed to submit review");
     }
   };
-
+  const hasReviewed = (orderId, productId) => {
+    const order = orders.find((o) => o._id === orderId);
+    if (!order) return false;
+  
+    // Find the product by productId
+    const product = order.orderItems.find((item) => item.product._id === productId)?.product;
+    if (!product || !product.reviews) return false; // Ensure reviews exist
+  
+    // Check if any review matches the orderId and userId
+    const userId = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user'))._id : null;
+    return product.reviews.some(
+      (review) =>
+        review.orderID.toString() === orderId.toString() &&
+        review.user.toString() === userId
+    );
+  };
+  
   return (
     <div className="bg-stone-300 min-h-screen">
       <Header />
@@ -166,39 +183,48 @@ const OrderPage = () => {
                 </div>
                 <div className="space-y-2">
                 {order.orderItems.map((item, index) => (
-                      <div key={index} className="mb-4">
-                        {/* Check if the order is delivered */}
-                        {order.orderStatus === "Delivered" ? (
-                          // Format for "Delivered" orders
-                          <div className="flex flex-col space-y-2">
-                            <div className="flex justify-between items-start">
-                              <span className="text-gray-600 text-sm">{item.quantity} × {item.product.product_name}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-800 font-semibold text-lg">
-                                ${(item.product.price * item.quantity).toFixed(2)}
-                              </span>
-                              <button
-                                onClick={() => openReviewModal(order._id, item.product._id)} // Pass both orderId and productId
-                                className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition ml-4"
-                              >
-                                <FaEdit className="mr-2" />
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          // Format for other order statuses (Processing, Cancelled, etc.)
-                          <div className="flex justify-between items-center">
-                            <span className="text-gray-600">
-                              {item.quantity} × {item.product.product_name}
-                            </span>
-                            <span className="text-gray-800 font-semibold">
-                              ${(item.product.price * item.quantity).toFixed(2)}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+  <div key={index} className="mb-4">
+    {/* Check if the order is delivered */}
+    {order.orderStatus === "Delivered" ? (
+      // Format for "Delivered" orders
+      <div className="flex flex-col space-y-2">
+        <div className="flex justify-between items-start">
+          <span className="text-gray-600 text-sm">
+            {item.quantity} × {item.product.product_name}
+          </span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-gray-800 font-semibold text-lg">
+            ${(item.product.price * item.quantity).toFixed(2)}
+          </span>
+
+          {/* Check if the user has already reviewed the product for this order */}
+          {hasReviewed(order._id, item.product._id) ? (
+            <span className="text-gray-500">Already Reviewed</span>
+          ) : (
+            <button
+              onClick={() => openReviewModal(order._id, item.product._id)} // Pass both orderId and productId
+              className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition ml-4"
+            >
+              <FaEdit className="mr-2" />
+              Write a Review
+            </button>
+          )}
+        </div>
+      </div>
+    ) : (
+      // Format for other order statuses (Processing, Cancelled, etc.)
+      <div className="flex justify-between items-center">
+        <span className="text-gray-600">
+          {item.quantity} × {item.product.product_name}
+        </span>
+        <span className="text-gray-800 font-semibold">
+          ${(item.product.price * item.quantity).toFixed(2)}
+        </span>
+      </div>
+    )}
+  </div>
+))}
 
                   <div className="flex justify-between items-center mt-4 border-t pt-4">
                     <span className="text-lg font-bold text-gray-800">
