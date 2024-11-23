@@ -1,7 +1,7 @@
 import Order from '../models/order.model.js';  // Import the Order model
 import Product from '../models/product.model.js';  // Import the Product model to check product availability
 import { User } from '../models/user.model.js';  // Import the User model to get user details (if needed)
-
+import { Filter } from 'bad-words';
 export const placeOrder = async (req, res) => {
   try {
     const {
@@ -221,12 +221,15 @@ export const createReview = async (req, res) => {
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
+    // Create a new instance of the bad-words filter
+    const filter = new Filter();
+    const cleanReview = filter.clean(review);
 
     // Create a new review object
     const newReview = {
       user: userId,
       rating,
-      comment: review,
+      comment: cleanReview,
     };
 
     // Add the new review to the product's reviews array
