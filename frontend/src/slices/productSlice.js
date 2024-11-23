@@ -2,6 +2,20 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
+// export const filterProduct = createAsyncThunk(
+//   'products/filterProduct',
+//   async ({ filters }) => {
+//     const response = await axios.get('http://localhost:5000/api/products/filter', {
+//       withCredentials: true,
+//       params: {  // Send filters as query parameters
+//         categories: filters.selectedCategories.join(','), // Categories as comma-separated string
+//         priceRange: filters.selectedPriceRanges.join(','),  // Price range as a string
+//         searchQuery: filters.searchQuery,
+//       },
+//     });
+//     return response.data.products;
+//   }
+// );
 export const filterProduct = createAsyncThunk(
   'products/filterProduct',
   async ({ filters }) => {
@@ -11,6 +25,7 @@ export const filterProduct = createAsyncThunk(
         categories: filters.selectedCategories.join(','), // Categories as comma-separated string
         priceRange: filters.selectedPriceRanges.join(','),  // Price range as a string
         searchQuery: filters.searchQuery,
+        minRating: filters.selectedMinRating,  // Send minRating if it's specified
       },
     });
     return response.data.products;

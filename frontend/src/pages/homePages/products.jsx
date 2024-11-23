@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { filterProduct } from '../../slices/productSlice';
 import Header from './Header'; // Assuming you have a Header component
-import { FaTimes, FaArrowLeft, FaArrowRight, FaCartPlus, FaInfoCircle } from 'react-icons/fa';
+import { FaTimes, FaArrowLeft, FaArrowRight, FaCartPlus, FaInfoCircle, FaStar } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 
@@ -10,12 +10,16 @@ const ProductPage = () => {
   const [filters, setFilters] = useState({
     selectedCategories: [],
     selectedPriceRanges: [],
+    selectedMinRating: [], // Added selectedMinRating for rating filter
     searchQuery: '',
   });
 
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0); // To track the current image index
+  const [expandedReviews, setExpandedReviews] = useState({}); // Track which reviews are expanded
+  const [users, setUsers] = useState({}); // To store the user details by user_id
+  const [showReviewsModal, setShowReviewsModal] = useState(false); 
 
   const dispatch = useDispatch();
   const { products, loading, error } = useSelector((state) => state.products);
@@ -23,10 +27,12 @@ const ProductPage = () => {
   useEffect(() => {
     // Fetch products with filters when component mounts or filters change
     if (filters) {
-      
       dispatch(filterProduct({ filters }));
     }
   }, [dispatch, filters]);
+
+  // Fetch user details when reviews are available (to get usernames)
+
 
   const handleSearchChange = (event) => {
     setFilters((prev) => ({ ...prev, searchQuery: event.target.value }));
@@ -34,21 +40,45 @@ const ProductPage = () => {
 
   const handleFilterChange = (type) => (event) => {
     const { value, checked } = event.target;
-
+  
     setFilters((prev) => {
       const updatedFilters = { ...prev };
       const selectedArray = updatedFilters[type];
-
+  
       if (checked) {
         updatedFilters[type] = [...selectedArray, value];
       } else {
         updatedFilters[type] = selectedArray.filter((item) => item !== value);
       }
-
+  
       return updatedFilters;
     });
   };
 
+  const handleRatingFilterChange = (rating) => {
+    setFilters((prev) => {
+      const newRatings = prev.selectedMinRating.includes(rating)
+        ? prev.selectedMinRating.filter((r) => r !== rating) // Uncheck: remove rating
+        : [...prev.selectedMinRating, rating]; // Check: add rating
+      return {
+        ...prev,
+        selectedMinRating: newRatings, // Update the state with the new selected ratings
+      };
+    });
+  };
+  
+  const renderStarRating = (rating) => {
+    const stars = [];
+    for (let i = 0; i < 5; i++) {
+      if (i < rating) {
+        stars.push(<FaStar key={i} className="text-yellow-500" />); // Full star
+      } else {
+        stars.push(<FaStar key={i} className="text-gray-300" />); // Empty star
+      }
+    }
+    return <div className="flex">{stars}</div>; // Wrap in a flex container to align horizontally
+  };
+  
   const handleViewDetails = (product) => {
     setSelectedProduct(product);
     setShowModal(true);
@@ -57,6 +87,7 @@ const ProductPage = () => {
 
   const handleCloseModal = () => {
     setShowModal(false);
+    setShowReviewsModal(false);
     setSelectedProduct(null);
   };
 
@@ -75,65 +106,71 @@ const ProductPage = () => {
     }
   };
 
-  const renderStarRating = (rating) => {
-    const filledStars = Math.floor(rating);
-    const emptyStars = 5 - filledStars;
-    const halfStar = rating % 1 >= 0.5 ? 1 : 0;
+  
+  
 
-    return (
-      <div className="flex items-center">
-        {[...Array(filledStars)].map((_, index) => (
-          <span key={`filled-${index}`} className="text-yellow-500">⭐</span>
-        ))}
-        {halfStar === 1 && <span className="text-yellow-500">⭐</span>}
-        {[...Array(emptyStars)].map((_, index) => (
-          <span key={`empty-${index}`} className="text-gray-400">⭐</span>
-        ))}
-      </div>
-    );
+  const getUserId = () => {
+    const user = JSON.parse(localStorage.getItem('user')); // Parse the JSON string back to an object
+    return user ? user._id : null; // Return the user ID if it exists, otherwise null
   };
 
-    const getUserId = () => {
-      const user = JSON.parse(localStorage.getItem('user')); // Parse the JSON string back to an object
-      return user ? user._id : null; // Return the user ID if it exists, otherwise null
-    };
+  const handleAddToCart = async (productId, quantity) => {
+    try {
+      const userId = getUserId(); // Get the user ID from localStorage
 
-    const handleAddToCart = async (productId, quantity) => {
-      try {
-        const userId = getUserId(); // Get the user ID from localStorage
-    
-        // If no user ID is found in localStorage, handle the case (e.g., redirect to login)
-        if (!userId) {
-          console.error("User not logged in");
-          toast.error("You need to log in first!"); // Show error message with Toastify
-          return;
-        }
-    
-        const response = await axios.post('http://localhost:5000/api/auth/add', 
-          {
-            productId,
-            quantity,
-          },
-          {
-            headers: {
-              'Authorization': `Bearer ${userId}`, // Assuming the user ID or token is passed in the Authorization header
-            },
-          }
-        );
-    
-        // Log the success message to the console
-        console.log('Product added to cart:', response.data);
-    
-        // Show success message with Toastify
-        toast.success("Product added to cart successfully!"); 
-      } catch (error) {
-        console.error('Error adding to cart:', error);
-    
-        // Show error message with Toastify
-        toast.error("Error adding product to cart. Please try again.");
+      // If no user ID is found in localStorage, handle the case (e.g., redirect to login)
+      if (!userId) {
+        console.error("User not logged in");
+        toast.error("You need to log in first!"); // Show error message with Toastify
+        return;
       }
-    };
+
+      const response = await axios.post('http://localhost:5000/api/auth/add',
+        {
+          productId,
+          quantity,
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${userId}`, // Assuming the user ID or token is passed in the Authorization header
+          },
+        }
+      );
+
+      // Log the success message to the console
+      console.log('Product added to cart:', response.data);
+
+      // Show success message with Toastify
+      toast.success("Product added to cart successfully!");
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+
+      // Show error message with Toastify
+      toast.error("Error adding product to cart. Please try again.");
+    }
+  };
+
+  // Toggle the expanded state of a specific review
+  const handleToggleReview = (index) => {
+    setExpandedReviews((prev) => ({
+      ...prev,
+      [index]: !prev[index],
+    }));
+  };
+  const handleOpenReviewsModal = (product) => {
+    if (product && product.reviews) {
+      setSelectedProduct(product);
+      setShowReviewsModal(true);
+    } else {
+      console.log("No reviews available for this product");
+    }
+  };
   
+
+  const handleCloseReviewsModal = () => {
+    setShowReviewsModal(false);
+
+  };
 
   return (
     <div>
@@ -197,78 +234,161 @@ const ProductPage = () => {
               </div>
             ))}
           </div>
+
+          {/* Rating Filter */}
+          <div className="mb-4">
+          <h3 className="text-lg font-semibold mb-2">Rating</h3>
+          {[1, 2, 3, 4, 5].map((rating) => (
+            <div key={rating} className="flex items-center">
+              <input
+                type="checkbox"
+                value={rating}
+                checked={filters.selectedMinRating==(rating)} // Check if the rating is selected
+                onChange={() => handleRatingFilterChange(rating)} // Update filters when clicked
+                className="mr-2"
+              />
+              <label>{renderStarRating(rating)}</label>
+            </div>
+          ))}
+        </div>
         </div>
 
-        {/* Products Display Area */}
-        <div className="w-3/4 pl-6">
-          <h2 className="text-2xl font-bold mb-6">Products</h2>
-          {loading ? (
-            <p>Loading...</p>
-          ) : error ? (
-            <p>Error loading products: {error}</p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {products.length > 0 ? (
-                products.map((product) => (
-                  <div
-                    key={product._id}
-                    className="border rounded-lg shadow-lg p-4 bg-stone-100 transform transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-xl hover:bg-stone-200"
-                  >
-                    <img
-                      src={product.product_images[0]?.url}
-                      alt={product.product_name}
-                      className="w-full h-48 object-cover rounded-lg mb-4"
-                    />
-                    <h3 className="text-lg font-semibold">{product.product_name}</h3>
-                    <p className="text-sm text-gray-600">{product.category}</p>
-                    <div className="mb-2">{renderStarRating(product.numOfReviews)}</div>
-                    <p className="text-xl font-bold text-slate-800">${product.price.toFixed(2)}</p>
+        {/* Product Listing Section */}
+        <div className="w-7/8 ml-6">
+          <h2 className="text-3xl font-semibold mb-4">Products</h2>
 
-                    {/* Stock and Quantity Selector */}
-                    <div className="mb-4">
-                      <label htmlFor={`quantity-${product._id}`} className="text-sm font-semibold">
-                        Quantity
-                      </label>
-                      <div className="flex items-center space-x-2 mt-2">
-                        <input
-                          id={`quantity-${product._id}`}
-                          type="number"
-                          min="1"
-                          max={product.stocks} // Prevent exceeding available stock
-                          defaultValue="1"
-                          className="w-16 p-2 border rounded-md"
-                        />
-                        <p className="text-sm text-gray-500">Stock: {product.stocks}</p>
-                      </div>
+          {/* Product Cards */}
+          <div className="grid grid-cols-3 gap-4">
+            {loading ? (
+              <p>Loading...</p>
+            ) : error ? (
+              <p className="text-red-500">Error: {error.message}</p>
+            ) : (
+              products.map((product) => (
+                <div
+                  key={product._id}
+                  className="p-4 bg-white shadow-lg rounded-lg cursor-pointer hover:scale-105"
+                >
+                  <img
+                    src={product.product_images[0]?.url}
+                    alt={product.product_name}
+                    className="w-full h-56 object-cover rounded-md mb-4"
+                  />
+                  <h3 className="text-lg font-semibold">{product.product_name}</h3>
+                  <p className="text-sm text-gray-600">{product.category}</p>
+                  <div className="mb-2">
+                    {renderStarRating(
+                      product.reviews?.length > 0
+                        ? product.reviews.reduce((acc, review) => acc + review.rating, 0) / product.reviews.length
+                        : 0
+                    )}
+                  </div>
+
+                  <p className="text-xl font-bold text-slate-800">${product.price.toFixed(2)}</p>
+
+                  {/* Stock and Quantity Selector */}
+                  <div className="mb-4">
+                    <label htmlFor={`quantity-${product._id}`} className="text-sm font-semibold">
+                      Quantity
+                    </label>
+                    <div className="flex items-center space-x-2 mt-2">
+                      <input
+                        id={`quantity-${product._id}`}
+                        type="number"
+                        min="1"
+                        max={product.stocks} // Prevent exceeding available stock
+                        defaultValue="1"
+                        className="w-16 p-2 border rounded-md"
+                      />
+                      <p className="text-sm text-gray-500">Stock: {product.stocks}</p>
                     </div>
-                      {/* Add to Cart Button */}
-                      <button
-                            onClick={() => {
-                              const quantity = document.getElementById(`quantity-${product._id}`).value; // Get quantity from the input field
-                              handleAddToCart(product._id, quantity); // Pass productId and quantity to the backend
-                            }}
-                            className="inline-block mt-4 mr-12 px-6 py-2 text-slate-600 bg-transparent rounded-lg hover:bg-stone-500 hover:text-white"
-                          >
-                            <FaCartPlus size={24} /> {/* Cart icon */}
-                          </button>
+                  </div>
 
-                          {/* View Details Button */}
-                          <button
-                            onClick={() => handleViewDetails(product)}
-                            className="inline-block mt-4 ml-20 px-6 py-2 text-slate-600 bg-transparent rounded-lg hover:bg-stone-500 hover:text-white"
-                          >
-                            <FaInfoCircle size={24} /> {/* Info icon */}
-                          </button>
+                  {/* Add to Cart Button */}
+                  <button
+                    onClick={() => {
+                      const quantity = document.getElementById(`quantity-${product._id}`).value; // Get quantity from the input field
+                      handleAddToCart(product._id, quantity); // Pass productId and quantity to the backend
+                    }}
+                    className="inline-block mt-4 mr-12 px-6 py-2 text-slate-600 bg-transparent rounded-lg hover:bg-stone-500 hover:text-white"
+                  >
+                    <FaCartPlus size={24} /> {/* Cart icon */}
+                  </button>
+
+
+
+                  <button
+                    onClick={() => handleOpenReviewsModal(product)} // Just call the function
+                    className="inline-block mt-4 px-6 py-2 text-slate-600 bg-transparent rounded-lg hover:bg-stone-500 hover:text-white"
+                  >
+                    <FaStar size={24} /> {/* Star icon */}
+                  </button>
+
+             
+                  {/* View Details Button */}
+                  <button
+                    onClick={() => handleViewDetails(product)}
+                    className="inline-block mt-4 ml-12 px-6 py-2 text-slate-600 bg-transparent rounded-lg hover:bg-stone-500 hover:text-white"
+                  >
+                    <FaInfoCircle size={24} /> {/* Info icon */}
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      {showReviewsModal && selectedProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-1/2 max-h-[80vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold mb-4">Customer Reviews</h2>
+
+            {/* Reviews Section */}
+            <div className="space-y-4">
+              {selectedProduct.reviews && selectedProduct.reviews.length > 0 ? (
+                selectedProduct.reviews.map((review, index) => (
+                  <div key={index} className="border-b py-4">
+                    <div className="flex items-center mb-2">
+                      {renderStarRating(review.rating)}
+                      <p className="ml-2 text-sm text-gray-500">by {review.user.name}</p>
+                    </div>
+
+                    {/* Review Dropdown */}
+                    <div className="text-sm text-gray-700">
+                      {expandedReviews[index] ? (
+                        <p>{review.comment}</p>
+                      ) : (
+                        <p>{review.comment.slice(0, 100)}...</p> // Show preview of the comment
+                      )}
+
+                      <button
+                        onClick={() => handleToggleReview(index)} // Toggle review expand/collapse
+                        className="text-blue-500 mt-2"
+                      >
+                        {expandedReviews[index] ? 'Show less' : 'Show more'}
+                      </button>
+                    </div>
                   </div>
                 ))
               ) : (
-                <p>No products found</p>
+                <p>No reviews yet.</p>
               )}
             </div>
-          )}
-        </div>
 
-      </div>
+            {/* Close Button */}
+            <button
+              onClick={handleCloseReviewsModal}
+              className="px-4 py-2 text-black bg-transparent border border-transparent rounded-lg hover:bg-red-700 mt-4"
+            >
+              <FaTimes size={24} /> {/* Close icon */}
+            </button>
+          </div>
+        </div>
+      )}
+
+
+
       {/* Modal for Product Details */}
       {showModal && selectedProduct && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 transition-opacity duration-300 ease-in-out opacity-100">
@@ -286,7 +406,7 @@ const ProductPage = () => {
 
             {/* Image Navigation */}
             <div className="flex justify-between mb-4">
-                      {/* Previous Button */}
+              {/* Previous Button */}
               <button
                 onClick={handlePreviousImage}
                 className="px-4 py-2 text-black bg-transparent border border-transparent rounded-lg hover:bg-gray-700"
@@ -311,6 +431,8 @@ const ProductPage = () => {
 
             {/* Stock Information */}
             <p className="mb-4 text-sm text-gray-500">Stock: {selectedProduct.stocks}</p>
+
+          
 
             {/* Close Button */}
             <button

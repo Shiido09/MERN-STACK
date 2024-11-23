@@ -180,3 +180,91 @@ export const updateOrderStatus = async (req, res) => {
     res.status(500).json({ message: 'Error updating order status', error: error.message });
   }
 };
+
+
+export const cancelOrder = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    if (order.orderStatus === 'Delivered') {
+      return res.status(400).json({ message: 'Delivered orders cannot be cancelled.' });
+    }
+
+    order.orderStatus = 'Cancelled';
+    await order.save();
+
+    res.status(200).json({ message: 'Order cancelled successfully', order });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+
+// reviews
+export const createReview = async (req, res) => {
+  const { review, rating, userId } = req.body;
+  const productId = req.params.id;  // Capture productId from the URL parameter
+
+  if (!review || !rating || !userId) {
+    return res.status(400).json({ message: 'All fields are required' });
+  }
+
+  try {
+    // Find the product by ID
+    const product = await Product.findById(productId);
+    
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Create a new review object
+    const newReview = {
+      user: userId,
+      rating,
+      comment: review,
+    };
+
+    // Add the new review to the product's reviews array
+    product.reviews.push(newReview);
+    product.numOfReviews = product.reviews.length;
+
+    // Recalculate the average rating of the product
+    product.rating = product.reviews.reduce((acc, review) => acc + review.rating, 0) / product.reviews.length;
+
+    // Save the updated product document
+    await product.save();
+
+    return res.status(201).json({ message: 'Review submitted successfully' });
+  } catch (error) {
+    console.error('Error creating review:', error);
+    return res.status(500).json({ message: 'Error creating review' });
+  }
+};
+
+
+export const getProductsWithReviews = async (req, res) => {
+  try {
+    // Fetch all products and populate reviews with user name
+    const products = await Product.find({})
+      .populate({
+        path: 'reviews.user', // Populate user details in the reviews
+        select: 'name', // Only fetch the user's name
+      });
+
+    res.status(200).json({
+      success: true,
+      products,
+    });
+  } catch (error) {
+    console.error('Error fetching products with reviews:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch products',
+    });
+  }
+};

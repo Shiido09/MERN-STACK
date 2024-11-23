@@ -159,45 +159,108 @@ export const getAllProducts = async (req, res, next) => {
 
 // product.controller.js
 
+// export const filterProduct = async (req, res) => {
+//   const { categories, priceRange, searchQuery } = req.query;
+
+//   let filters = {};
+
+//   // Logging the query parameters to check them
+//   console.log('Request filters:', { categories, priceRange, searchQuery });
+
+//   if (categories) {
+//     filters.category = { $in: categories.split(',') };
+//   }
+
+//   if (priceRange) {
+//     const priceRanges = priceRange.split(',');
+//     filters.price = {
+//       $gte: parseInt(priceRanges[0].replace('$', '').replace('Under ', '').replace('Above ', '').trim()),
+//       $lte: parseInt(priceRanges[1]?.replace('$', '').trim()) || Infinity,
+//     };
+//   }
+
+//   if (searchQuery) {
+//     filters.product_name = { $regex: searchQuery, $options: 'i' };
+//   }
+
+//   // Log the filters object before querying the database
+//   console.log('Applied filters:', filters);
+
+//   try {
+//     const products = await Product.find(filters);
+
+//     // Log the resulting products
+//     console.log('Filtered products:', products);
+
+//     res.json({ products });
+//   } catch (error) {
+//     console.error('Error fetching products:', error.message);
+//     res.status(500).json({ message: error.message });
+//   }
+// };
+
 export const filterProduct = async (req, res) => {
-  const { categories, priceRange, searchQuery } = req.query;
+  const { categories, priceRange, searchQuery, minRating } = req.query;
 
   let filters = {};
 
-  // Logging the query parameters to check them
-  console.log('Request filters:', { categories, priceRange, searchQuery });
+  // Logging query parameters
+  console.log('Request filters:', { categories, priceRange, searchQuery, minRating });
 
+  // Category filtering
   if (categories) {
     filters.category = { $in: categories.split(',') };
   }
 
+  // Price range filtering
   if (priceRange) {
     const priceRanges = priceRange.split(',');
-    filters.price = {
-      $gte: parseInt(priceRanges[0].replace('$', '').replace('Under ', '').replace('Above ', '').trim()),
-      $lte: parseInt(priceRanges[1]?.replace('$', '').trim()) || Infinity,
-    };
+
+    // Handle different price ranges
+    filters.price = {};
+
+    priceRanges.forEach((range) => {
+      if (range.includes('Under')) {
+        // Example: Under $5000
+        filters.price.$lte = parseInt(range.replace('$', '').replace('Under ', '').trim());
+      } else if (range.includes('Above')) {
+        // Example: Above $10000
+        filters.price.$gte = parseInt(range.replace('$', '').replace('Above ', '').trim());
+      } else if (range.includes('-')) {
+        // Example: $5000 - $10000
+        const [min, max] = range.split('-').map((r) => parseInt(r.replace('$', '').trim()));
+        filters.price.$gte = min;
+        filters.price.$lte = max;
+      }
+    });
   }
 
+  // Search query filtering
   if (searchQuery) {
     filters.product_name = { $regex: searchQuery, $options: 'i' };
   }
 
-  // Log the filters object before querying the database
-  console.log('Applied filters:', filters);
-
   try {
-    const products = await Product.find(filters);
+    if (minRating) {
+      filters.reviews = { 
+        $elemMatch: { 
+          rating: { $gte: parseFloat(minRating) } 
+        } 
+      };
+    }
 
-    // Log the resulting products
+    // Regular filtering with or without rating
+    const products = await Product.find(filters).populate('reviews.user'); // Populate the user information for reviews
+
     console.log('Filtered products:', products);
-
     res.json({ products });
   } catch (error) {
     console.error('Error fetching products:', error.message);
     res.status(500).json({ message: error.message });
   }
 };
+
+
 
 // READ a single product by ID
 export const getProductById = async (req, res, next) => {
