@@ -584,3 +584,14 @@ export const saveFcmToken = async (req, res) => {
   }
 };
 
+export const deleteFcmToken = async (req, res) => {
+  const { fcmToken } = req.body;
+  try {
+    // Remove the FCM token from the database (implement this according to your database schema)
+    await User.updateMany({ fcmToken }, { $unset: { fcmToken: 1 } });
+    res.status(200).json({ success: true, message: 'FCM token deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting FCM token:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete FCM token' });
+  }
+};
