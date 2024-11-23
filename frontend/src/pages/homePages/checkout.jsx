@@ -130,13 +130,13 @@ const CheckoutPage = () => {
               {products.map((item, index) => (
                 <div key={index} className="flex justify-between text-lg">
                   <span>{item.product_name}</span>
-                  <span>£{item.subtotal.toFixed(2)} ({item.quantity} x £{item.price.toFixed(2)})</span>
+                  <span>₱{item.subtotal.toFixed(2)} ({item.quantity} x ₱{item.price.toFixed(2)})</span>
                 </div>
               ))}
             </div>
             <div className="mt-4 flex justify-between text-lg font-semibold">
               <span>Subtotal:</span>
-              <span>£{total.toFixed(2)}</span>
+              <span>₱{total.toFixed(2)}</span>
             </div>
           </div>
 
@@ -152,9 +152,9 @@ const CheckoutPage = () => {
                 onChange={handleShippingChange}
               >
                 <option value="">Select Shipping Option</option>
-                <option value="Standard Shipping">Standard Shipping - £5</option>
-                <option value="Express Shipping">Express Shipping - £15</option>
-                <option value="Same-Day Delivery">Same-Day Delivery - £25</option>
+                <option value="Standard Shipping">Standard Shipping - ₱5</option>
+                <option value="Express Shipping">Express Shipping - ₱15</option>
+                <option value="Same-Day Delivery">Same-Day Delivery - ₱25</option>
                 <option value="Pickup">Pickup - Free</option>
               </select>
             </div>
@@ -219,15 +219,15 @@ const CheckoutPage = () => {
             <h2 className="text-xl font-semibold text-primary">Order Summary</h2>
             <div className="mt-4 flex justify-between text-lg font-semibold">
               <span>Subtotal:</span>
-              <span>£{total.toFixed(2)}</span>
+              <span>₱{total.toFixed(2)}</span>
             </div>
             <div className="mt-4 flex justify-between text-lg font-semibold">
               <span>Shipping:</span>
-              <span>£{shippingCost.toFixed(2)}</span>
+              <span>₱{shippingCost.toFixed(2)}</span>
             </div>
             <div className="mt-4 flex justify-between text-lg font-semibold">
               <span>Total:</span>
-              <span>£{(total + shippingCost).toFixed(2)}</span>
+              <span>₱{(total + shippingCost).toFixed(2)}</span>
             </div>
           </div>
         </div>

@@ -222,13 +222,13 @@ export const filterProduct = async (req, res) => {
     priceRanges.forEach((range) => {
       if (range.includes('Under')) {
         // Example: Under $5000
-        filters.price.$lte = parseInt(range.replace('$', '').replace('Under ', '').trim());
+        filters.price.$lte = parseInt(range.replace('₱', '').replace('Under ', '').trim());
       } else if (range.includes('Above')) {
         // Example: Above $10000
-        filters.price.$gte = parseInt(range.replace('$', '').replace('Above ', '').trim());
+        filters.price.$gte = parseInt(range.replace('₱', '').replace('Above ', '').trim());
       } else if (range.includes('-')) {
         // Example: $5000 - $10000
-        const [min, max] = range.split('-').map((r) => parseInt(r.replace('$', '').trim()));
+        const [min, max] = range.split('-').map((r) => parseInt(r.replace('₱', '').trim()));
         filters.price.$gte = min;
         filters.price.$lte = max;
       }

@@ -179,3 +179,26 @@ export const WELCOME_EMAIL_TEMPLATE = `
   </body>
 </html>
 `;
+
+export const ORDER_CONFIRMATION_TEMPLATE = `
+  <h2>Order Confirmation</h2>
+  <p>Thank you for your order, {name}!</p>
+  <p>Your order ID: <strong>{orderId}</strong></p>
+  <h3>Order Details:</h3>
+  <table style="width: 100%; border-collapse: collapse;">
+    <thead>
+      <tr>
+        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Product</th>
+        <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Quantity</th>
+        <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Subtotal</th>
+      </tr>
+    </thead>
+    <tbody>
+      {orderItems}
+    </tbody>
+  </table>
+  <p>Shipping Address: {shippingAddress}</p>
+  <p>Shipping Fee: ₱{shippingFee}</p>
+  <p style="margin-top: 20px; font-size: 16px;"><strong>Grand Total: </strong>₱{grandTotal}</p>
+  
+`;

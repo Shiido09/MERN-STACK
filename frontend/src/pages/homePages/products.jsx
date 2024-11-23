@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback  } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { filterProduct } from '../../slices/productSlice';
 import Header from './Header'; // Assuming you have a Header component
@@ -20,40 +20,61 @@ const ProductPage = () => {
   const [expandedReviews, setExpandedReviews] = useState({}); // Track which reviews are expanded
   const [users, setUsers] = useState({}); // To store the user details by user_id
   const [showReviewsModal, setShowReviewsModal] = useState(false); 
+  const [page, setPage] = useState(1); // Track the current page for pagination
 
   const dispatch = useDispatch();
   const { products, loading, error } = useSelector((state) => state.products);
 
-  useEffect(() => {
-    // Fetch products with filters when component mounts or filters change
-    if (filters) {
-      dispatch(filterProduct({ filters }));
-    }
-  }, [dispatch, filters]);
+  // useEffect(() => {
+  //   // Fetch products with filters when component mounts or filters change
+  //   if (filters) {
+  //     dispatch(filterProduct({ filters }));
+  //   }
+  // }, [dispatch, filters]);
 
-  // Fetch user details when reviews are available (to get usernames)
+  useEffect(() => {
+    dispatch(filterProduct({ filters, page }));
+  }, [dispatch, filters, page]);
+
+  // Function to detect when the user has scrolled to the bottom
+  const handleScroll = useCallback((event) => {
+    const bottom = event.target.scrollHeight === event.target.scrollTop + event.target.clientHeight;
+    if (bottom && !loading) {
+      setPage((prevPage) => prevPage + 1); // Increment page number to load more products
+    }
+  }, [loading]);
+
+  useEffect(() => {
+    // Add scroll event listener on the product container
+    const productContainer = document.getElementById('product-container');
+    productContainer.addEventListener('scroll', handleScroll);
+
+    return () => {
+      productContainer.removeEventListener('scroll', handleScroll);
+    };
+  }, [handleScroll]);
 
 
   const handleSearchChange = (event) => {
     setFilters((prev) => ({ ...prev, searchQuery: event.target.value }));
   };
 
-  const handleFilterChange = (type) => (event) => {
-    const { value, checked } = event.target;
-  
-    setFilters((prev) => {
-      const updatedFilters = { ...prev };
-      const selectedArray = updatedFilters[type];
-  
-      if (checked) {
-        updatedFilters[type] = [...selectedArray, value];
-      } else {
-        updatedFilters[type] = selectedArray.filter((item) => item !== value);
-      }
-  
-      return updatedFilters;
-    });
-  };
+const handleFilterChange = (type) => (event) => {
+  const { value, checked } = event.target;
+
+  setFilters((prev) => {
+    const updatedFilters = { ...prev };
+    const selectedArray = updatedFilters[type];
+
+    if (checked) {
+      updatedFilters[type] = [...selectedArray, value];
+    } else {
+      updatedFilters[type] = selectedArray.filter((item) => item !== value);
+    }
+
+    return updatedFilters;
+  });
+};
 
   const handleRatingFilterChange = (rating) => {
     setFilters((prev) => {
@@ -221,7 +242,7 @@ const ProductPage = () => {
           {/* Price Range Filter */}
           <div className="mb-4">
             <h3 className="text-lg font-semibold mb-2">Price Range</h3>
-            {['Under $5000', '$5000 - $10000', 'Above $10000'].map((range) => (
+            {['Under ₱5000', '₱5000 - ₱10000', 'Above ₱10000'].map((range) => (
               <div key={range} className="flex items-center">
                 <input
                   type="checkbox"
@@ -254,7 +275,7 @@ const ProductPage = () => {
         </div>
 
         {/* Product Listing Section */}
-        <div className="w-7/8 ml-6">
+        <div className="w-8/8 mb-12 ml-6" id="product-container" style={{ height: '100vh', overflowY: 'auto' }}>
           <h2 className="text-3xl font-semibold mb-4">Products</h2>
 
           {/* Product Cards */}
@@ -284,7 +305,7 @@ const ProductPage = () => {
                     )}
                   </div>
 
-                  <p className="text-xl font-bold text-slate-800">${product.price.toFixed(2)}</p>
+                  <p className="text-xl font-bold text-slate-800">₱{product.price.toFixed(2)}</p>
 
                   {/* Stock and Quantity Selector */}
                   <div className="mb-4">
@@ -338,6 +359,8 @@ const ProductPage = () => {
           </div>
         </div>
       </div>
+
+      {loading && <div className="text-center mt-4">Loading more products...</div>}
 
       {showReviewsModal && selectedProduct && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60">
@@ -426,7 +449,7 @@ const ProductPage = () => {
             {/* Product Details */}
             <p className="mb-4">{selectedProduct.explanation}</p>
             <p className="mb-4 text-xl font-semibold">
-              Price: ${selectedProduct.price.toFixed(2)}
+              Price: ₱{selectedProduct.price.toFixed(2)}
             </p>
 
             {/* Stock Information */}

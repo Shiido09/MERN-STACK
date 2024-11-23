@@ -2,6 +2,95 @@ import Order from '../models/order.model.js';  // Import the Order model
 import Product from '../models/product.model.js';  // Import the Product model to check product availability
 import { User } from '../models/user.model.js';  // Import the User model to get user details (if needed)
 import { Filter } from 'bad-words';
+import {
+  sendOrderConfirmationEmail
+} from "../mailtrap/emails.js";
+// export const placeOrder = async (req, res) => {
+//   try {
+//     const {
+//       userId,
+//       orderItems,
+//       shippingInfo,
+//       paymentInfo,
+//       shippingPrice,
+//       totalPrice,
+//     } = req.body;
+
+//     // Validate incoming data
+//     if (!userId || !orderItems || orderItems.length === 0) {
+//       return res.status(400).json({ message: 'No order items or user ID provided.' });
+//     }
+
+//     // Check if the user exists in the database
+//     const user = await User.findById(userId);
+//     if (!user) {
+//       return res.status(404).json({ message: 'User not found.' });
+//     }
+
+//     // Validate each product in the orderItems array
+//     const productIds = orderItems.map(item => item.product);
+//     const products = await Product.find({ _id: { $in: productIds } });
+
+//     if (products.length !== orderItems.length) {
+//       return res.status(404).json({ message: 'One or more products not found.' });
+//     }
+
+//     // Check if quantities are available for each product
+//     for (let i = 0; i < orderItems.length; i++) {
+//       const product = products.find(p => p._id.toString() === orderItems[i].product);
+//       if (product.stocks < orderItems[i].quantity) {
+//         return res.status(400).json({
+//           message: `Insufficient stock for product: ${product.product_name}`,
+//         });
+//       }
+//     }
+
+//     // Create a new order
+//     const newOrder = new Order({
+//       user: user._id,
+//       orderItems,
+//       shippingInfo,
+//       paymentInfo,
+//       shippingPrice,
+//       totalPrice,
+//     });
+
+//     // Save the order to the database
+//     const order = await newOrder.save();
+
+//     // Update product stock after saving the order
+//     for (let i = 0; i < orderItems.length; i++) {
+//       const product = await Product.findById(orderItems[i].product);
+
+//       // Ensure there's enough stock before reducing the quantity
+//       if (product.stocks >= orderItems[i].quantity) {
+//         product.stocks -= orderItems[i].quantity;
+//         await product.save();  // Save the updated product stock
+//       } else {
+//         return res.status(400).json({
+//           message: `Not enough stock for product: ${product.name}`,
+//         });
+//       }
+//     }
+
+//     // Remove the ordered items from the user's cart
+//     await User.findByIdAndUpdate(userId, {
+//       $pull: {
+//         cart: { product: { $in: productIds } }, // Remove the ordered products from the cart
+//       },
+//     });
+
+//     res.status(201).json({
+//       message: 'Order placed successfully.',
+//       order,
+//     });
+//   } catch (error) {
+//     console.error('Error placing order:', error);
+//     res.status(500).json({ message: 'Error placing the order. Please try again.' });
+//   }
+// };
+
+
 export const placeOrder = async (req, res) => {
   try {
     const {
@@ -25,7 +114,7 @@ export const placeOrder = async (req, res) => {
     }
 
     // Validate each product in the orderItems array
-    const productIds = orderItems.map(item => item.product);
+    const productIds = orderItems.map((item) => item.product);
     const products = await Product.find({ _id: { $in: productIds } });
 
     if (products.length !== orderItems.length) {
@@ -34,7 +123,7 @@ export const placeOrder = async (req, res) => {
 
     // Check if quantities are available for each product
     for (let i = 0; i < orderItems.length; i++) {
-      const product = products.find(p => p._id.toString() === orderItems[i].product);
+      const product = products.find((p) => p._id.toString() === orderItems[i].product);
       if (product.stocks < orderItems[i].quantity) {
         return res.status(400).json({
           message: `Insufficient stock for product: ${product.product_name}`,
@@ -62,7 +151,7 @@ export const placeOrder = async (req, res) => {
       // Ensure there's enough stock before reducing the quantity
       if (product.stocks >= orderItems[i].quantity) {
         product.stocks -= orderItems[i].quantity;
-        await product.save();  // Save the updated product stock
+        await product.save(); // Save the updated product stock
       } else {
         return res.status(400).json({
           message: `Not enough stock for product: ${product.name}`,
@@ -77,15 +166,45 @@ export const placeOrder = async (req, res) => {
       },
     });
 
+    // Prepare email details
+    const formattedOrderItems = orderItems.map((item) => {
+      const product = products.find((p) => p._id.toString() === item.product);
+      return {
+        productName: product.product_name,
+        quantity: item.quantity,
+        price: product.price, // Assuming `price` exists in your Product model
+      };
+    });
+
+    const grandTotal = totalPrice;
+    const shippingAddress = shippingInfo.address;
+    const shippingFee = shippingPrice;
+    // Send order confirmation email
+    try {
+      await sendOrderConfirmationEmail(
+        user.email,
+        user.name,
+        order._id.toString(),
+        formattedOrderItems,
+        grandTotal,
+        shippingAddress,
+        shippingFee
+      );
+    } catch (emailError) {
+      console.error("Error sending order confirmation email:", emailError);
+      // Proceed with the order even if the email fails
+    }
+
     res.status(201).json({
-      message: 'Order placed successfully.',
+      message: "Order placed successfully.",
       order,
     });
   } catch (error) {
-    console.error('Error placing order:', error);
-    res.status(500).json({ message: 'Error placing the order. Please try again.' });
+    console.error("Error placing order:", error);
+    res.status(500).json({ message: "Error placing the order. Please try again." });
   }
 };
+
 
 export const getUserOrders = async (req, res) => {
   try {
@@ -99,6 +218,40 @@ export const getUserOrders = async (req, res) => {
   }
 
 };
+
+// export const getUserOrders = async (req, res) => {
+//   try {
+//     // Fetch orders and populate product details
+//     const orders = await Order.find({ user: req.user._id })
+//       .populate('orderItems.product', 'product_name price reviews'); // Populating reviews from Product model
+
+//     // Fetch and update each order item with review status
+//     const updatedOrders = await Promise.all(
+//       orders.map(async (order) => {
+//         // Check each item in the order
+//         const updatedItems = await Promise.all(
+//           order.orderItems.map(async (item) => {
+//             // Get the product details with reviews
+//             const product = await Product.findById(item.product._id);
+//             // Check if the user has already reviewed this product
+//             const hasReviewed = product.reviews.some(
+//               (review) => review.user.toString() === req.user._id.toString()
+//             );
+//             return { ...item._doc, hasReviewed }; // Add hasReviewed field to each item
+//           })
+//         );
+
+//         // Return updated order with the items containing the hasReviewed field
+//         return { ...order._doc, orderItems: updatedItems };
+//       })
+//     );
+
+//     res.status(200).json(updatedOrders); // Return the updated orders with review status
+//   } catch (error) {
+//     console.error('Error fetching orders:', error);
+//     res.status(500).json({ message: 'Failed to fetch orders', error: error.message });
+//   }
+// };
 
 export const getStats = async (req, res) => {
   try {
