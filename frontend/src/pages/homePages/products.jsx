@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback  } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { filterProduct } from '../../slices/productSlice';
 import Header from './Header'; // Assuming you have a Header component
-import { FaTimes, FaArrowLeft, FaArrowRight, FaCartPlus, FaInfoCircle, FaStar } from 'react-icons/fa';
+import { FaTimes, FaArrowLeft, FaArrowRight, FaCartPlus, FaInfoCircle, FaStar, FaRegStar, FaStarHalfAlt} from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 
@@ -76,30 +76,47 @@ const handleFilterChange = (type) => (event) => {
   });
 };
 
-  const handleRatingFilterChange = (rating) => {
-    setFilters((prev) => {
-      const newRatings = prev.selectedMinRating.includes(rating)
-        ? prev.selectedMinRating.filter((r) => r !== rating) // Uncheck: remove rating
-        : [...prev.selectedMinRating, rating]; // Check: add rating
-      return {
-        ...prev,
-        selectedMinRating: newRatings, // Update the state with the new selected ratings
-      };
-    });
-  };
-  
-  const renderStarRating = (rating) => {
-    const stars = [];
-    for (let i = 0; i < 5; i++) {
-      if (i < rating) {
-        stars.push(<FaStar key={i} className="text-yellow-500" />); // Full star
-      } else {
-        stars.push(<FaStar key={i} className="text-gray-300" />); // Empty star
-      }
+const handleRatingFilterChange = (rating) => {
+  setFilters((prev) => {
+    const newSelectedRatings = [...prev.selectedMinRating];
+
+    // If the rating is already selected, remove it (unselect)
+    if (newSelectedRatings.includes(rating)) {
+      const index = newSelectedRatings.indexOf(rating);
+      newSelectedRatings.splice(index, 1); // Remove the rating from the array
+    } else {
+      newSelectedRatings.push(rating); // Otherwise, add the rating to the array
     }
-    return <div className="flex">{stars}</div>; // Wrap in a flex container to align horizontally
-  };
-  
+
+    return {
+      ...prev,
+      selectedMinRating: newSelectedRatings, // Update the selected ratings array
+    };
+  });
+};
+
+
+
+const renderStarRating = (averageRating) => {
+  const stars = [];
+
+  for (let i = 0; i < 5; i++) {
+    if (i < Math.floor(averageRating)) {
+      // Full star
+      stars.push(<FaStar key={i} className="text-yellow-500" />);
+    } else if (i < averageRating) {
+      // Half star
+      stars.push(<FaStarHalfAlt key={i} className="text-yellow-500" />);
+    } else {
+      // Empty star
+      stars.push(<FaRegStar key={i} className="text-gray-300" />);
+    }
+  }
+
+  return <div className="flex">{stars}</div>; // Wrap in a flex container for alignment
+};
+
+
   const handleViewDetails = (product) => {
     setSelectedProduct(product);
     setShowModal(true);
@@ -258,20 +275,21 @@ const handleFilterChange = (type) => (event) => {
 
           {/* Rating Filter */}
           <div className="mb-4">
-          <h3 className="text-lg font-semibold mb-2">Rating</h3>
-          {[1, 2, 3, 4, 5].map((rating) => (
-            <div key={rating} className="flex items-center">
-              <input
-                type="checkbox"
-                value={rating}
-                checked={filters.selectedMinRating==(rating)} // Check if the rating is selected
-                onChange={() => handleRatingFilterChange(rating)} // Update filters when clicked
-                className="mr-2"
-              />
-              <label>{renderStarRating(rating)}</label>
-            </div>
-          ))}
-        </div>
+  <h3 className="text-lg font-semibold mb-2">Rating</h3>
+  {[1, 2, 3, 4, 5].map((rating) => (
+    <div key={rating} className="flex items-center">
+      <input
+        type="checkbox"
+        value={rating}
+        checked={filters.selectedMinRating.includes(rating)} // Check if the rating is in the selected array
+        onChange={() => handleRatingFilterChange(rating)} // Toggle rating
+        className="mr-2"
+      />
+      <label>{renderStarRating(rating)}</label>
+    </div>
+  ))}
+</div>
+
         </div>
 
         {/* Product Listing Section */}

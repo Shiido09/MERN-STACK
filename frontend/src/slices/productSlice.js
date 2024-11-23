@@ -25,7 +25,7 @@ export const filterProduct = createAsyncThunk(
         categories: filters.selectedCategories.join(','), // Categories as comma-separated string
         priceRange: filters.selectedPriceRanges.join(','),  // Price range as a string
         searchQuery: filters.searchQuery,
-        minRating: filters.selectedMinRating,  // Send minRating if it's specified
+        minRating: filters.selectedMinRating[0],   // Send minRating if it's specified
       },
     });
     return response.data.products;
