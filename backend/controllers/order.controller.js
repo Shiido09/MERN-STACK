@@ -306,14 +306,34 @@ export const getOrderById = async (req, res) => {
   }
 };
 
+// export const getAllOrders = async (req, res) => {
+//   try {
+//     const orders = await Order.find().populate('user').populate('orderItems.product');
+//     res.json(orders);
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };
 export const getAllOrders = async (req, res) => {
   try {
-    const orders = await Order.find().populate('user').populate('orderItems.product');
+    const orders = await Order.find()
+      .populate('user')
+      .populate({
+        path: 'orderItems.product',
+        populate: {
+          path: 'reviews', // Ensure reviews are populated
+          populate: {
+            path: 'user', // If you want to show user details in reviews
+            select: 'name avatar', // Customize fields to show (optional)
+          },
+        },
+      });
     res.json(orders);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 export const cancelOrder = async (req, res) => {
   const { id } = req.params;
@@ -385,7 +405,63 @@ export const createReview = async (req, res) => {
   }
 };
 
+export const updateReview = async (req, res) => {
+  const { productId } = req.params;
+  const { orderID, userID, rating, comment } = req.body; // Data from the frontend
 
+  // Debugging: Log the incoming data to see if it's correct
+  console.log('Incoming Request Data:');
+  console.log('Product ID:', productId);
+  console.log('Order ID:', orderID);
+  console.log('User ID:', userID);
+  console.log('Rating:', rating);
+  console.log('Comment:', comment);
+
+  try {
+    const product = await Product.findById(productId); // Find the product by its ID
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Debugging: Log the product data to ensure it's being retrieved correctly
+    console.log('Product Found:', product);
+
+    // Find the specific review by orderID and userID
+    const reviewIndex = product.reviews.findIndex(
+      (review) => review.orderID.toString() === orderID && review.user.toString() === userID
+    );
+
+    // Debugging: Log the index of the found review
+    console.log('Review Index:', reviewIndex);
+
+    if (reviewIndex === -1) {
+      return res.status(404).json({ message: 'Review not found' });
+    }
+
+    // Debugging: Log the review data before updating
+    console.log('Review to Update:', product.reviews[reviewIndex]);
+
+    // Clean the comment to filter bad words before updating it
+    const filter = new Filter();
+    const cleanComment = filter.clean(comment);
+
+    // Update the review details with the clean comment
+    product.reviews[reviewIndex].rating = rating;
+    product.reviews[reviewIndex].comment = cleanComment;
+
+    // Debugging: Log the updated review
+    console.log('Updated Review:', product.reviews[reviewIndex]);
+
+    // Save the updated product
+    await product.save();
+
+    res.status(200).json({ message: 'Review updated successfully', updatedReview: product.reviews[reviewIndex] });
+  } catch (error) {
+    console.error('Error updating review:', error);
+    res.status(500).json({ message: 'Failed to update review', error: error.message });
+  }
+};
 
 export const getProductsWithReviews = async (req, res) => {
   try {
